@@ -1,13 +1,13 @@
 #include "structs.h"
-char gamedir[TAM] = "/Jogo/"; 
-int maxplayers = 30;
-#define GAMEDIR gamedir
-#define MAXPLAYER maxplayers
+#define GAMEDIR "/Jogo/"  //caso nao exista v.ambiente fica com este valor
+#define MAXPLAYER 30	   //caso nao exista v.ambiente fica com este valor
+
 
 int main(int argc, char* argv[]){
-
 int duracao;
 int espera;
+char gamedir[TAM] = GAMEDIR; 
+int maxplayers = MAXPLAYER;
 
 //verificacao
 if(argc != 3){
