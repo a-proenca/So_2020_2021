@@ -1,7 +1,7 @@
 #include "structs.h"
 #define GAMEDIR "/Jogo/"  //caso nao exista v.ambiente fica com este valor
 #define MAXPLAYER 30	   //caso nao exista v.ambiente fica com este valor
-
+//ola2
 
 int main(int argc, char* argv[]){
 int duracao;
