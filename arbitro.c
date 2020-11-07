@@ -10,8 +10,14 @@ char gamedir[TAM] = GAMEDIR;
 int maxplayers = MAXPLAYER;
 
 //verificacao
-if(argc != 3){
+if(argc < 3){
  printf("Nao foi indicado o numero de argumentos necessarios.\n");
+ printf("Por favor indique a duração do campeonato e o tempo de espera.\n");
+ return 0;
+}
+else if(argc > 3){
+	printf("Foram indicados argumentos em excesso.\n");
+	printf("Por favor indique apenas a duração do campeonato e o tempo de espera.\n");
  return 0;
 }
 //leitura da linha de comandos
