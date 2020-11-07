@@ -33,16 +33,17 @@ int main(int argc, char *argv[])
         printf("\nTesoura ganha Papel");
         printf("\nPapel ganha Pedra");
 
-        printf("O jogo é a melhor de 3, ganha o jogador a vencer 2 vezes");
+        printf("\nO jogo é a melhor de 3, ganha o jogador a vencer 2 vezes");
     }
     if (strcasecmp(resposta, "START") == 0)
     {
         do{
             do{
-                printf("\nInsira o numero do Objeto (1-3): ");
+                printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
                 scanf("%d", &numero); 
             }while(numero<1 || numero>3);
         r = rand() % 3 + 1;
+        printf("\nO seu adversario jogou o objeto correspondente ao numero %d",r);
         ganha=verifica(numero,r);
         if (ganha==1){
             contap1++;
@@ -86,11 +87,11 @@ int verifica(int p1, int p2)
     }
     if (p1 == 1 && p2 == 2)
     {
-        ganha = 1;
+        ganha = 2;
     }
     if (p1 == 2 && p2 == 1)
     {
-        ganha = 2;
+        ganha = 1;
     }
     if (p1 == 1 && p2 == 3)
     {
