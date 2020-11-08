@@ -10,8 +10,8 @@ cliente:
 	gcc structs.h cliente.c -o cliente	
 
 jogo:
-	gcc -c $(GAMEDIR)/G_004.c
-	gcc  $(GAMEDIR)/G_004.c -o $(GAMEDIR)/jogo	
+	gcc -c G_004.c
+	gcc  G_004.c -o jogo	
 
 clean: cleana cleanc cleanj
 
@@ -24,7 +24,9 @@ cleanc:
 	rm cliente.o 
 	
 cleanj:
-	rm $(GAMEDIR)/jogo
+	rm jogo
 	rm G_004.o
 																			
-
+install:
+	cp jogo Jogo
+	rm jogo
