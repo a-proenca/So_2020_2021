@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "structs.h"
 #include <sys/wait.h>
+cliente c;
+int servpid;
+
 
 void acabou_campeonato()
 {
@@ -11,8 +14,7 @@ void acabou_campeonato()
 
 int main(int argc, char argv[])
 {
-  char nome[TAM] = " ";
-
+  c.pid=getpid();
   if (signal(SIGUSR1, acabou_campeonato) == SIG_ERR)
   {
     printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR1\n");
@@ -20,9 +22,10 @@ int main(int argc, char argv[])
   }
 
   printf("\nIndique o seu nome: ");
-  scanf("%s", nome);
+  scanf("%s", c.nome);
+ 
 
-  printf("Nome = %s\n", nome);
+  printf("Nome = %s\n", c.nome);
 
   return 0;
 }

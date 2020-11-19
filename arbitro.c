@@ -2,6 +2,15 @@
 #define GAMEDIR "Jogo" //caso nao exista v.ambiente fica com este valor
 #define MAXPLAYER 30   //caso nao exista v.ambiente fica com este valor
 
+/*
+void * Logins(){
+	cliente ci;
+	int fd_serv=open(SERV_PIPE,ORDONLY);
+	read(fd_serv,&ci,sizeof(cliente));
+
+}
+*/
+
 void comandosMenu()
 {
 	printf("==========Configuracoes==========\n");

@@ -5,6 +5,9 @@
 #include <signal.h>
 #include <unistd.h>
 #define TAM 50
+#define SERV_PIPE "pipe_serivdor"
+#define PIPE_CLIENT_READ "cli_read_%d"
+#define PIPE_CLIENT_WRITE "cli_write_%d"
 
 //estrutura jogo
 typedef struct jogo{
