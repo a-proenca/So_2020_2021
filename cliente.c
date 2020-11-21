@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "structs.h"
 #include <sys/wait.h>
-cliente c;
+Cliente c;
 int servpid;
 
 

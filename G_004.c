@@ -6,6 +6,8 @@
 #include <sys/wait.h>
 #define TAM 50
 
+int PONTUACAO = 0;
+
 int flag_termina = 0;
 
 int verifica(int p1, int p2);
@@ -33,6 +35,7 @@ int main(int argc, char *argv[])
     srand(time(NULL));
 
     printf("\n---------------------BEM VINDO AO JOGO------------");
+    
     do
     {
         printf("\n--------------------------------------Regras----------------------------------");
@@ -51,6 +54,8 @@ int main(int argc, char *argv[])
         }
         if (strcasecmp(resposta, "START") == 0)
         {
+            contap1=0; 
+            contap2=0;
             do
             {
                 do
@@ -83,16 +88,23 @@ int main(int argc, char *argv[])
             {
                 printf("\n--------Resultado Final---------");
                 printf("\nVocê Ganhou %d-%d\n", contap1, contap2);
-                exit(0);
+                PONTUACAO+=1;
             }
             else
             {
                 printf("\n--------Resultado Final----------");
                 printf("\nVocê Perdeu %d-%d\n", contap1, contap2);
-                exit(0);
+                if(PONTUACAO>0){
+                PONTUACAO-=1;
+                }
+                else
+                {
+                PONTUACAO=0;
+                }
             }
         }
     } while (strcasecmp(resposta, "exit") != 0 && flag_termina == 0);
+    exit(PONTUACAO);
 }
 
 int verifica(int p1, int p2)
