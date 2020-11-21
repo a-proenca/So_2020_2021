@@ -14,6 +14,7 @@ void * Logins(){
 void comandosMenu()
 {
 	printf("==========Configuracoes==========\n");
+	printf("Começar Campeonato\n");
 	printf("Listar jogadores em jogo (players)\n");
 	printf("Listar jogos disponiveis (games)\n");
 	printf("Remover jogador do campeonato (k+nomejogador)\n");
@@ -56,6 +57,18 @@ int main(int argc, char *argv[])
 	Arbitro a;
 	a.nclientes = 0;
 	char comando[TAM];
+	int res;
+	int pipe1[2];
+	int pipe2[2];
+
+	if(pipe(pipe1)==-1){
+		fprintf(stderr,"Erro na Criação do Pipe");
+		exit(0);
+	}
+	if(pipe(pipe2)==-1){
+		fprintf(stderr,"Erro na Criação do Pipe");
+		exit(0);
+	}
 	//verificacao se foram indicados os argumentos necessarios
 	if (argc < 3)
 	{
@@ -81,6 +94,27 @@ int main(int argc, char *argv[])
 		maxplayers = atoi(getenv("MAXPLAYER"));
 
 	printf("gamedir = %s;maxplayers = %d\n", gamedir, maxplayers);
+
+	res = fork();
+	if(res== 0){ 
+		// Processo filho
+		//Falta gerar um nr aleatorio para escolher um jogo da diretoria
+		//pipe1 -> write || pipe2 -> read
+		// Cliente -> Jogo
+		close(pipe1[1]);//fechar parte escrita pipe1
+		close(pipe2[0]);//fechar parte de leitura do pipe2
+		dup2(pipe1[0],0); //redirecionamos a escrita do pipe1
+		dup2(pipe2[1],1); //redirecionamos a leitra do pipe2
+		
+		execl("/Jogo/G_004","G_004",NULL); 
+	}
+	else{ 
+		//MADEIRAO
+		close(pipe1[0]);
+		close(pipe2[1]);
+	    
+
+	}
 	comandosMenu();
 	do
 	{
