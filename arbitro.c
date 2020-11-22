@@ -1,7 +1,9 @@
 #include "structs.h"
 #define GAMEDIR "Jogo" //caso nao exista v.ambiente fica com este valor
 #define MAXPLAYER 30   //caso nao exista v.ambiente fica com este valor
-
+int duracao;
+Arbitro a;
+int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
 
 /*
 void * Logins(){
@@ -15,7 +17,6 @@ void * Logins(){
 void comandosMenu()
 {
 	printf("==========Configuracoes==========\n");
-	printf("Começar Campeonato\n");
 	printf("Listar jogadores em jogo (players)\n");
 	printf("Listar jogos disponiveis (games)\n");
 	printf("Remover jogador do campeonato (k+nomejogador)\n");
@@ -26,16 +27,28 @@ void comandosMenu()
 	printf("=================================\n");
 }
 
-void comeca_campeonato(int duracao, Arbitro *a)
+//Funcao responsavel pela duracao do campeonato
+void *duracao_campeonato(void *dados /*int duracao, Arbitro *a*/)
 {
-	sleep(duracao * 1000); //espera a duracao
 
-	//kill(pid_jogo, SIGUSR1);
-
-	for (int i = 0; i < a->nclientes; i++)
+	int dur = duracao;
+	printf("Comecou campeonato\n");
+	do
 	{
-		kill(a->clientes[i].pid, SIGUSR1);
+		sleep(1);
+		dur--;
+	} while (dur > 0 && FLAG_TERMINA == 0);
+	for (int i = 0; i < a.n_jogos; i++)
+	{
+		kill(a.jogos[i].pid_jogo, SIGUSR1);
 	}
+
+	for (int i = 0; i < a.nclientes; i++)
+	{
+		kill(a.clientes[i].pid, SIGUSR1);
+	}
+	printf("Terminou campeonato.\n");
+	pthread_exit(NULL);
 }
 
 //Funcao que tira a primeira letra do comando e devolve o nome do jogador
@@ -51,23 +64,26 @@ char *devolve_nome(char comando[TAM])
 
 int main(int argc, char *argv[])
 {
-	int duracao;
+	//int duracao;
 	int espera;
 	char gamedir[TAM] = GAMEDIR;
 	int maxplayers = MAXPLAYER;
 	Arbitro a;
 	a.nclientes = 0;
+	a.n_jogos = 0;
 	char comando[TAM];
 	int res;
 	int pipe1[2];
 	int pipe2[2];
 
-	if(pipe(pipe1)==-1){
-		fprintf(stderr,"Erro na Criação do Pipe");
+	if (pipe(pipe1) == -1)
+	{
+		fprintf(stderr, "Erro na Criação do Pipe");
 		exit(0);
 	}
-	if(pipe(pipe2)==-1){
-		fprintf(stderr,"Erro na Criação do Pipe");
+	if (pipe(pipe2) == -1)
+	{
+		fprintf(stderr, "Erro na Criação do Pipe");
 		exit(0);
 	}
 	//verificacao se foram indicados os argumentos necessarios
@@ -96,25 +112,33 @@ int main(int argc, char *argv[])
 
 	printf("gamedir = %s;maxplayers = %d\n", gamedir, maxplayers);
 
+	pthread_t *threads;
+	threads = (pthread_t *)malloc(sizeof(pthread_t));
+	pipe(pipe1);
+	pipe(pipe2);
 	res = fork();
-	if(res== 0){ 
+	//pthread_create(threads, NULL, (void *)duracao_campeonato, NULL);
+	if (res == 0)
+	{
+		
 		// Processo filho
 		//Falta gerar um nr aleatorio para escolher um jogo da diretoria
 		//pipe1 -> write || pipe2 -> read
-		// Cliente -> Jogo
-		close(pipe1[1]);//fechar parte escrita pipe1
-		close(pipe2[0]);//fechar parte de leitura do pipe2
-		dup2(pipe1[0],0); //redirecionamos a escrita do pipe1
-		dup2(pipe2[1],1); //redirecionamos a leitra do pipe2
+		// Cliente -> Jogo ---------- Named Pipes
+		pthread_create(threads, NULL, (void *)duracao_campeonato, NULL); //Thread para começar a contar a duracao do campeonato
+		close(pipe1[1]);   //fechar parte escrita pipe1
+		close(pipe2[0]);   //fechar parte de leitura do pipe2
+		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
+		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2
 		
-		execl("/Jogo/G_004","G_004",NULL); 
+		execl("/Jogo/G_004", "G_004", NULL);
+		free(threads);
 	}
-	else{ 
+	else
+	{
 		//MADEIRAO
 		close(pipe1[0]);
 		close(pipe2[1]);
-	    
-
 	}
 	comandosMenu();
 	do
@@ -180,6 +204,10 @@ int main(int argc, char *argv[])
 			//falta implementar
 			printf("O comando inserido foi %s\n", comando);
 		}
-	} while (strcasecmp(comando, "exit") != 0);
+		else if (strcasecmp(comando, "exit") == 0)
+		{
+			FLAG_TERMINA = 1;
+		}
+	} while (FLAG_TERMINA == 0);
 	return 0;
 }

@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
+#include <pthread.h>
 #define TAM 50
 #define SERV_PIPE "pipe_serivdor"
 #define PIPE_CLIENT_READ "cli_read_%d"
