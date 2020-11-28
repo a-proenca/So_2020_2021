@@ -5,14 +5,7 @@ int duracao;
 Arbitro a;
 int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
 
-/*
-void * Logins(){
-	cliente ci;
-	int fd_serv=open(SERV_PIPE,ORDONLY);
-	read(fd_serv,&ci,sizeof(cliente));
-
-}
-*/
+//FAZER A VERIFICACÂO DO NOME ATRAVES DO ARBRITO
 
 void comandosMenu()
 {
@@ -49,6 +42,8 @@ void *duracao_campeonato(void *dados /*int duracao, Arbitro *a*/)
 	}
 	printf("Terminou campeonato.\n");
 	pthread_exit(NULL);
+
+	//fechar apenas o jogo 
 }
 
 //Funcao que tira a primeira letra do comando e devolve o nome do jogador
@@ -65,10 +60,16 @@ char *devolve_nome(char comando[TAM])
 int main(int argc, char *argv[])
 {
 	//int duracao;
+	int fd_cli;
+	int fd_serv;
+	int mensg;
+	char fifo_name[20];
 	int espera;
+	int bytes;
 	char gamedir[TAM] = GAMEDIR;
 	int maxplayers = MAXPLAYER;
 	Arbitro a;
+	Cliente c;
 	a.nclientes = 0;
 	a.n_jogos = 0;
 	char comando[TAM];
@@ -139,6 +140,28 @@ int main(int argc, char *argv[])
 		//MADEIRAO
 		close(pipe1[0]);
 		close(pipe2[1]);
+
+		if(access(SERV_PIPE,F_OK)){
+         if(mkfifo(SERV_PIPE,0600)==-1){
+            perror("[ERRO]na Criação do pipe do servidor.\n");
+        }   
+       
+    	}else{
+        printf("[Erro] Ja existe uma instancia do servidor a correr.\n");
+        exit(0);
+   		}
+
+
+		fd_serv = open(SERV_PIPE, O_WRONLY);
+
+		//>>falta ir buscar a pontuacao ao jogos dar a pontuacao c.pontuacao = x;
+		bytes=write(fd_serv,&c,sizeof(Cliente));
+
+		/*sprintf(fifo_name,CLIENT_PIPE,c.pid);
+		fd_cli = open(fifo_name, O_WRONLY);
+		//write()pontuacao
+		*/
+
 	}
 	comandosMenu();
 	do
@@ -209,5 +232,7 @@ int main(int argc, char *argv[])
 			FLAG_TERMINA = 1;
 		}
 	} while (FLAG_TERMINA == 0);
+
+	unlink(SERV_PIPE);
 	return 0;
 }
