@@ -5,8 +5,10 @@
 #include <signal.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #define TAM 50
-#define SERV_PIPE "pipe_serivdor"
+#define SERV_PIPE "pipe_servidor"
 #define CLIENT_PIPE "client_%d"
 
 

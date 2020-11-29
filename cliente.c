@@ -11,8 +11,6 @@ void acabou_campeonato()
   //falta a parte da pontuacao
 }
 
-
-
 int main(int argc, char argv[])
 {
   char fifo_name[20];
@@ -20,7 +18,10 @@ int main(int argc, char argv[])
   int nb;
   int fd_cli;
 
-  
+  if(access(SERV_PIPE,F_OK) != 0){
+      printf("[Erro]Nao existe nenhum servidor ativo.\n");
+      exit(EXIT_FAILURE);
+  }  
   sprintf(fifo_name, CLIENT_PIPE, getpid());
 /*
   if(acess(fifo_name,F_OK)==0){
@@ -44,11 +45,16 @@ int main(int argc, char argv[])
         exit(0);
   }
   c.pid=getpid();
+  char teste[50];
   do{
 
-  
   fd_serv = open(SERV_PIPE, O_RDONLY);
-  nb=read(fd_serv,&c,sizeof(Cliente));
+  nb=read(fd_serv,&teste,sizeof(teste));
+  if(nb == 0){
+			printf("[Erro]Nao conseguiu ler nada do pipe.\n");
+		}
+    printf("Li do servidor: %s\n",teste);
+  //nb=read(fd_serv,&c,sizeof(Cliente));
 /*
   fd_cli = open(fifo_name, O_RDONLY);
   //read();
