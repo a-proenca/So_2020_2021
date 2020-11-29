@@ -144,3 +144,4 @@ int verifica(int p1, int p2)
 }
 
 //FALTA FAZER exit_status
+// USAR O WAIT EXIT_STATUS

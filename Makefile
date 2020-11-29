@@ -3,7 +3,7 @@ all: arbitro cliente jogo
 
 arbitro:
 	gcc -c arbitro.c
-	gcc structs.h arbitro.c -o arbitro
+	gcc structs.h arbitro.c -o arbitro -lpthread
 	
 cliente:
 	gcc -c cliente.c
