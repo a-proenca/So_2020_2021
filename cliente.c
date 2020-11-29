@@ -4,7 +4,6 @@
 Cliente c;
 int servpid;
 
-
 void acabou_campeonato()
 {
   printf("Acabou campeonato.\n");
@@ -17,59 +16,81 @@ int main(int argc, char argv[])
   int fd_serv;
   int nb;
   int fd_cli;
+  char teste[50];
+  int bytes;
+  char instrucao[TAM];
 
-  if(access(SERV_PIPE,F_OK) != 0){
-      printf("[Erro]Nao existe nenhum servidor ativo.\n");
-      exit(EXIT_FAILURE);
-  }  
+  if (access(SERV_PIPE, F_OK) != 0)
+  { //verifica se existe um servidor a correr
+    printf("[Erro]Nao existe nenhum servidor ativo.\n");
+    exit(EXIT_FAILURE);
+  }
   sprintf(fifo_name, CLIENT_PIPE, getpid());
-/*
-  if(acess(fifo_name,F_OK)==0){
-    printf("\n[ERRO] Cli ja existe.\n");
+
+  if (access(fifo_name, F_OK) == 0)
+  { // verifica se o pipe ja esta aberto
+    printf("\n[ERRO] Cliente ja existe.\n");
     exit(EXIT_FAILURE);
   }
 
-  if(mkfifo(fifo_name, 0600) == -1){
-    printf("\n[ERRO] mkfif do CLiente deu erro");
+  if (mkfifo(fifo_name, 0600) == -1)
+  {
+    printf("\n[ERRO] Erro ao criar o pipe do cliente (mkfifo)");
     exit(EXIT_FAILURE);
   }
-*/
+  c.pontuacao = 0;
+  c.pid = getpid();
+  strcpy(c.nome_jogo,"");
+  c.sair = 0;
+
+  printf("\nIndique o seu nome: ");
+  scanf("%s", c.nome);
+
+  printf("Nome = %s\n", c.nome);
+
   if (signal(SIGUSR1, acabou_campeonato) == SIG_ERR)
   {
     printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR1\n");
     exit(EXIT_FAILURE);
   }
 
-  if(access(SERV_PIPE,F_OK)!=0){
-        perror("[Erro] O servidor nao esta a correr.\n");
-        exit(0);
+  fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
+  bytes = write(fd_serv, &c, sizeof(Cliente));
+  if (bytes == 0)
+  {
+    printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
-  c.pid=getpid();
-  char teste[50];
-  do{
 
-  fd_serv = open(SERV_PIPE, O_RDONLY);
-  nb=read(fd_serv,&teste,sizeof(teste));
-  if(nb == 0){
-			printf("[Erro]Nao conseguiu ler nada do pipe.\n");
-		}
-    printf("Li do servidor: %s\n",teste);
-  //nb=read(fd_serv,&c,sizeof(Cliente));
-/*
-  fd_cli = open(fifo_name, O_RDONLY);
-  //read();
-*/
-  }while (nb<0);//fazer até ao sinal de interromper
- 
-  close(fd_serv);
- 
-  //unlink(CLINT_PIPE);
-  /*
-  printf("\nIndique o seu nome: ");
-  scanf("%s", c.nome);
- 
+  fd_cli = open(fifo_name, O_RDONLY); // Recebe info do servidor
+  bytes = read(fd_cli, &teste, sizeof(teste));
+  if (bytes == 0)
+  {
+    printf("[Erro]Nao conseguiu ler nada do pipe.\n");
+  }
+  printf("Li do servidor: %s\n", teste);
 
-  printf("Nome = %s\n", c.nome);
-*/
+  do
+  {
+    fflush(stdout);
+    fgets(instrucao, TAM, stdin);
+    instrucao[strlen(instrucao) - 1] = '\0';
+    if (strcasecmp(instrucao, "#mygame") == 0)
+    {
+      if (strcasecmp(c.nome_jogo, "") == 0)
+      {
+        printf("Nao esta nenhum jogo a decorrer.\n");
+      }
+      else
+      {
+        printf("O jogo que esta a jogar e o %s\n", c.nome_jogo);
+      }
+    }
+    else if (strcasecmp(instrucao, "#quit") == 0)
+    {
+      c.sair = 1;
+    }
+  } while (c.sair != 1);
+  close(fd_cli);
+  unlink(CLIENT_PIPE);
   return 0;
 }
