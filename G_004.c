@@ -17,6 +17,7 @@ void termina_jogo()
     flag_termina = 1;
 }
 
+//O JOGO AGORA NAO E POR RONDAS, PARA FACILITAR OS NAMED PIPES
 int main(int argc, char *argv[])
 {
     int contap1 = 0;
@@ -34,76 +35,51 @@ int main(int argc, char *argv[])
     }
     srand(time(NULL));
 
-    printf("\n---------------------BEM VINDO AO JOGO------------");
-    
+    printf("\n---------------------BEM VINDO AO JOGO------------"
+           "\n--------------------------------------Regras----------------------------------"
+           "\nEscolha um objeto dos 3 possiveis: 1-Pedra 2-Papel 3-Tesoura"
+           "\nO seu adversario irá escolher tambem 1 dos 3 possiveis"
+           "\nPedra ganha Tesoura"
+           "\nTesoura ganha Papel"
+           "\nPapel ganha Pedra");
+
     do
     {
-        printf("\n--------------------------------------Regras----------------------------------");
-        printf("\nEscolha um objeto dos 3 possiveis: 1-Pedra 2-Papel 3-Tesoura");
-        printf("\nO seu adversario irá escolher tambem 1 dos 3 possiveis");
-        printf("\nCaso não conheça este jogo escreva -> help <- para mais informações");
-        printf("\nEscreva -> start <- assim que quiser começar a jogar: ");
-        scanf("%s", resposta);
-        if (strcasecmp(resposta, "HELP") == 0)
+        do
         {
-            printf("\nPedra ganha Tesoura");
-            printf("\nTesoura ganha Papel");
-            printf("\nPapel ganha Pedra");
+            printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
+            scanf("%d", &numero);
 
-            printf("\nO jogo é a melhor de 3, ganha o jogador a vencer 2 vezes");
-        }
-        if (strcasecmp(resposta, "START") == 0)
-        {
-            contap1=0; 
-            contap2=0;
-            do
-            {
-                do
-                {
-                    printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
-                    scanf("%d", &numero);
-                } while (numero < 1 || numero > 3);
-                r = rand() % 3 + 1;
-                printf("\nO seu adversario jogou o objeto correspondente ao numero %d", r);
-                ganha = verifica(numero, r);
-                if (ganha == 1)
-                {
-                    contap1++;
-                    ronda++;
-                    printf("\nRonda %d Você ganhou!", ronda);
-                }
-                if (ganha == 2)
-                {
-                    contap2++;
-                    ronda++;
-                    printf("\nRonda %d Você perdeu!", ronda);
-                }
-                if (ganha == 0)
-                {
-
-                    printf("\nRonda %d Empatada, a ronda será repetida", ronda + 1);
-                }
-            } while (((contap2 < 2 && contap1 < 2) || (contap1 < 2 && contap2 < 2)) && flag_termina == 0);
-            if (contap1 > contap2)
-            {
-                printf("\n--------Resultado Final---------");
-                printf("\nVocê Ganhou %d-%d\n", contap1, contap2);
-                PONTUACAO+=1;
+            if (numero == 0)
+            { //Se o cliente puser #quit o arbitro manda 0
+                flag_termina = 1;
             }
-            else
+        } while (numero < 0 || numero > 3);
+        if (numero != 0)
+        {
+            r = rand() % 3 + 1;
+            printf("\nO seu adversario jogou o objeto correspondente ao numero %d", r);
+            ganha = verifica(numero, r);
+            if (ganha == 1)
             {
-                printf("\n--------Resultado Final----------");
-                printf("\nVocê Perdeu %d-%d\n", contap1, contap2);
-                if(PONTUACAO>0){
-                PONTUACAO-=1;
-                }
-                else
-                {
-                PONTUACAO=0;
-                }
+                PONTUACAO += 3; //Recebe 3 pontos por vitoria
+                ronda++;
+                printf("\nRonda %d Você ganhou!", ronda);
+            }
+            if (ganha == 2)
+            {
+                ronda++;
+                printf("\nRonda %d Você perdeu!", ronda);
+            }
+            if (ganha == 0)
+            {
+                ronda++;
+                PONTUACAO += 1;
+                printf("\nRonda %d Empatada", ronda);
             }
         }
-    } while (strcasecmp(resposta, "exit") != 0 && flag_termina == 0);
+    } while (flag_termina == 0);
+    printf("PONT = %d", PONTUACAO);
     exit(PONTUACAO);
 }
 
@@ -142,6 +118,3 @@ int verifica(int p1, int p2)
     }
     return ganha;
 }
-
-//FALTA FAZER exit_status
-// USAR O WAIT EXIT_STATUS

@@ -5,8 +5,43 @@ int duracao;
 Arbitro a;
 int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
 
-//FAZER A VERIFICACÂO DO NOME ATRAVES DO ARBRITO
+//para o IniciaJogo,chamaJogo,TerminaJogo 
+int pipe1[2];
+int pipe2[2];
+int filho;
+//FAZER A VERIFICACÂO DO NOME ATRAVES DO ARBITRO
 
+void InicaJogo(){
+	pipe(pipe1);
+	pipe(pipe2);
+	filho = fork();
+
+	if(filho == 0){
+		//Processo filho 
+		//pipe1 -> write || pipe2 -> read
+		close(0); //Fechar acesso ao teclado
+		dup(pipe1[0]); //Duplicar pipe1[0] na primeira posicao disponivel
+		close(pipe1[0]); //fechar a extremidade de leitura do pipe
+		close(pipe1[1]); //fechar a extremidade de escrita do pipe
+	
+		close(1); //Fechar acesso ao monitor
+		dup(pipe2[1]); //Duplicar pipe2[1] na primeira posicao disponivel
+		close(pipe2[0]); //fechar a extremidade de leitura do pipe
+		close(pipe2[1]); //fechar a extremidade de escrita do pipe
+		execl("/Jogo/G_004", "G_004", NULL);
+	}
+	close(pipe1[0]);
+	close(pipe2[1]);
+}
+
+int chamaJogo(){
+
+}
+
+void terminaJogo(){
+	close(pipe2[0]);
+	kill(filho,SIGUSR2);
+}
 void comandosMenu()
 {
 	printf("==========Configuracoes==========\n");
@@ -122,6 +157,7 @@ int main(int argc, char *argv[])
 
 	pthread_t *threads; //Thread que verifica a duracao do campeonato
 	threads = (pthread_t *)malloc(sizeof(pthread_t));
+	/*
 	pipe(pipe1);
 	pipe(pipe2);
 	res = fork();
@@ -145,6 +181,7 @@ int main(int argc, char *argv[])
 		//Processo Pai
 		close(pipe1[0]);
 		close(pipe2[1]);
+		*/
 
 		//Fd_serv trata de logins
 		fd_serv = open(SERV_PIPE, O_RDONLY); //abertura do pipe (read only)
@@ -168,7 +205,7 @@ int main(int argc, char *argv[])
 		}
 
 		//write()pontuacao
-	}
+//	}
 	comandosMenu();
 	do
 	{
