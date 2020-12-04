@@ -5,27 +5,29 @@ int duracao;
 Arbitro a;
 int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
 
-//para o IniciaJogo,chamaJogo,TerminaJogo 
+//para o IniciaJogo,chamaJogo,TerminaJogo
 int pipe1[2];
 int pipe2[2];
 int filho;
 //FAZER A VERIFICACÂO DO NOME ATRAVES DO ARBITRO
 
-void InicaJogo(){
+void InicaJogo()
+{
 	pipe(pipe1);
 	pipe(pipe2);
 	filho = fork();
 
-	if(filho == 0){
-		//Processo filho 
+	if (filho == 0)
+	{
+		//Processo filho
 		//pipe1 -> write || pipe2 -> read
-		close(0); //Fechar acesso ao teclado
-		dup(pipe1[0]); //Duplicar pipe1[0] na primeira posicao disponivel
+		close(0);		 //Fechar acesso ao teclado
+		dup(pipe1[0]);	 //Duplicar pipe1[0] na primeira posicao disponivel
 		close(pipe1[0]); //fechar a extremidade de leitura do pipe
 		close(pipe1[1]); //fechar a extremidade de escrita do pipe
-	
-		close(1); //Fechar acesso ao monitor
-		dup(pipe2[1]); //Duplicar pipe2[1] na primeira posicao disponivel
+
+		close(1);		 //Fechar acesso ao monitor
+		dup(pipe2[1]);	 //Duplicar pipe2[1] na primeira posicao disponivel
 		close(pipe2[0]); //fechar a extremidade de leitura do pipe
 		close(pipe2[1]); //fechar a extremidade de escrita do pipe
 		execl("/Jogo/G_004", "G_004", NULL);
@@ -34,13 +36,45 @@ void InicaJogo(){
 	close(pipe2[1]);
 }
 
-int chamaJogo(){
+int chamaJogo()
+{
+	int bytes = 0;
+	char resp[256];
+	int value;
+	int pont;
 
+	bytes = read(pipe2[0], resp, strlen(resp));
+	resp[bytes] = '\0';
+	//enviar info lida para o cliente pelo named pipe
+	do
+	{
+
+		do
+		{
+			bytes = read(pipe2[0], resp, strlen(resp));
+			//enviar info lida para o cliente pelo named pipe
+			write(pipe1[1], &value, 1);
+			write(pipe1[1], "\n", 1);
+		}while(value < 0 || value >3);
+		if (value != 0)
+		{	
+			bytes = read(pipe2[0], resp, strlen(resp));
+			resp[bytes] = '\0';
+			//enviar info lida para o cliente pelo named pipe
+
+			bytes = read(pipe2[0], resp, strlen(resp));
+			resp[bytes] = '\0';
+			//enviar info lida para o cliente pelo named pipe
+		}
+	}while(value != 0);
+	bytes = read(pipe2[0], &pont, 1);
+	//enviar info lida para o cliente pelo named pipe
 }
 
-void terminaJogo(){
+void terminaJogo()
+{
 	close(pipe2[0]);
-	kill(filho,SIGUSR2);
+	kill(filho, SIGUSR2);
 }
 void comandosMenu()
 {
@@ -183,29 +217,29 @@ int main(int argc, char *argv[])
 		close(pipe2[1]);
 		*/
 
-		//Fd_serv trata de logins
-		fd_serv = open(SERV_PIPE, O_RDONLY); //abertura do pipe (read only)
-		bytes = read(fd_serv, &a.clientes[a.nclientes], sizeof(Cliente));
-		if (bytes == 0)
-		{
-			printf("[Erro]Nao conseguiu ler nada do pipe.\n");
-		}
-		a.nclientes++; //vou adicionar um cliente
-		printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes - 1].nome);
+	//Fd_serv trata de logins
+	fd_serv = open(SERV_PIPE, O_RDONLY); //abertura do pipe (read only)
+	bytes = read(fd_serv, &a.clientes[a.nclientes], sizeof(Cliente));
+	if (bytes == 0)
+	{
+		printf("[Erro]Nao conseguiu ler nada do pipe.\n");
+	}
+	a.nclientes++; //vou adicionar um cliente
+	printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes - 1].nome);
 
-		sprintf(fifo_name, CLIENT_PIPE, a.clientes[a.nclientes - 1].pid);
-		fd_cli = open(fifo_name, O_WRONLY); //fd_cli trata de enviar info
+	sprintf(fifo_name, CLIENT_PIPE, a.clientes[a.nclientes - 1].pid);
+	fd_cli = open(fifo_name, O_WRONLY); //fd_cli trata de enviar info
 
-		//>>falta ir buscar a pontuacao ao jogos dar a pontuacao c.pontuacao = x;
-		//bytes=write(fd_serv,&c,sizeof(Cliente));
-		bytes = write(fd_cli, "Bem-vindo Cliente!", sizeof("Bem-vindo Cliente!"));
-		if (bytes == 0)
-		{
-			printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
-		}
+	//>>falta ir buscar a pontuacao ao jogos dar a pontuacao c.pontuacao = x;
+	//bytes=write(fd_serv,&c,sizeof(Cliente));
+	bytes = write(fd_cli, "Bem-vindo Cliente!", sizeof("Bem-vindo Cliente!"));
+	if (bytes == 0)
+	{
+		printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
+	}
 
-		//write()pontuacao
-//	}
+	//write()pontuacao
+	//	}
 	comandosMenu();
 	do
 	{
@@ -225,7 +259,7 @@ int main(int argc, char *argv[])
 				printf("\n Jogadores no campeonato: \n");
 				for (int i = 0; i < a.nclientes; i++)
 				{
-					if (strcasecmp(a.clientes[i].nome_jogo,"") == 0)
+					if (strcasecmp(a.clientes[i].nome_jogo, "") == 0)
 					{
 						printf("Jogador %d: %s nao esta a jogar nenhum jogo.\n", i + 1, a.clientes[i].nome);
 					}
