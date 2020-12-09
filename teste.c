@@ -17,6 +17,21 @@ void termina_jogo()
     flag_termina = 1;
 }
 
+/*
+int main(void){
+    char input[1024]={""};
+
+    fprintf(stdout,"STDOUT\n");
+    fprintf(stderr,"STDERR\n");
+    scanf("%1023s",input);
+
+    fprintf(stdout,"STDIN=[%s]\n",input);
+
+    return 0;
+}
+*/
+
+
 //O JOGO AGORA NAO E POR RONDAS, PARA FACILITAR OS NAMED PIPES
 int main(int argc, char *argv[])
 {
@@ -27,6 +42,8 @@ int main(int argc, char *argv[])
     //char resposta[TAM];
     int numero = 0;
     int r;
+    setbuf(stdout,NULL);
+   // printf("CHEGUEI AO 1 PRINT.\n");
 
     if (signal(SIGUSR1, termina_jogo) == SIG_ERR)
     {
@@ -35,7 +52,7 @@ int main(int argc, char *argv[])
     }
     
     srand(time(NULL));
-    
+
     printf("\n---------------------BEM VINDO AO JOGO------------"
            "\n--------------------------------------Regras----------------------------------"
            "\nEscolha um objeto dos 3 possiveis: 1-Pedra 2-Papel 3-Tesoura"
@@ -43,7 +60,8 @@ int main(int argc, char *argv[])
            "\nPedra ganha Tesoura"
            "\nTesoura ganha Papel"
            "\nPapel ganha Pedra");
-    
+    sleep(10);
+    /*
     do
     {
         do
@@ -82,9 +100,10 @@ int main(int argc, char *argv[])
     } while (flag_termina == 0);
     printf("PONT = %d", PONTUACAO);
     exit(PONTUACAO);
-    
+     */
     return 0;
 }
+
 
 int verifica(int p1, int p2)
 {

@@ -11,9 +11,9 @@ cliente:
 
 jogo:
 	gcc -c G_004.c
-	gcc  G_004.c -o jogo	
+	gcc  G_004.c -o G_004	
 
-clean: cleana cleanc cleanj
+clean: cleana cleanc cleanj clean_pipes
 
 cleana:
 	rm arbitro
@@ -24,9 +24,11 @@ cleanc:
 	rm cliente.o 
 	
 cleanj:
-	rm jogo
 	rm G_004.o
+
+clean_pipes:
+	find. -maxdepth 1 -type p -delete
 																			
 install:
-	cp jogo Jogo
-	rm jogo
+	cp G_004 Jogo
+	rm G_004

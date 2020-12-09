@@ -5,13 +5,9 @@ int duracao;
 Arbitro a;
 int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
 
-//para o IniciaJogo,chamaJogo,TerminaJogo
-int pipe1[2];
-int pipe2[2];
-int filho;
 //FAZER A VERIFICACÂO DO NOME ATRAVES DO ARBITRO
-
-void InicaJogo()
+/*
+void IniciaJogo()
 {
 	pipe(pipe1);
 	pipe(pipe2);
@@ -21,6 +17,7 @@ void InicaJogo()
 	{
 		//Processo filho
 		//pipe1 -> write || pipe2 -> read
+		/*
 		close(0);		 //Fechar acesso ao teclado
 		dup(pipe1[0]);	 //Duplicar pipe1[0] na primeira posicao disponivel
 		close(pipe1[0]); //fechar a extremidade de leitura do pipe
@@ -31,9 +28,15 @@ void InicaJogo()
 		close(pipe2[0]); //fechar a extremidade de leitura do pipe
 		close(pipe2[1]); //fechar a extremidade de escrita do pipe
 		execl("/Jogo/G_004", "G_004", NULL);
+		
+		close(pipe1[1]);												 //fechar parte escrita pipe1
+		close(pipe2[0]);												 //fechar parte de leitura do pipe2
+		dup2(pipe1[0], 0);												 //redirecionamos a escrita do pipe1
+		dup2(pipe2[1], 1);												 //redirecionamos a leitra do pipe2
+
+		execl("/Jogo/G_004","/Jogo/G_004",NULL);
 	}
-	close(pipe1[0]);
-	close(pipe2[1]);
+	
 }
 
 int chamaJogo()
@@ -42,10 +45,13 @@ int chamaJogo()
 	char resp[256];
 	int value;
 	int pont;
-
+	close(pipe1[0]);
+	close(pipe2[1]);
 	bytes = read(pipe2[0], resp, strlen(resp));
+	printf("bytes = %d\n",bytes);
 	resp[bytes] = '\0';
 	//enviar info lida para o cliente pelo named pipe
+	printf("resp = %s\n",resp);
 	do
 	{
 
@@ -53,6 +59,8 @@ int chamaJogo()
 		{
 			bytes = read(pipe2[0], resp, strlen(resp));
 			//enviar info lida para o cliente pelo named pipe
+			printf("resp = %s\n",resp);
+			scanf(" %d",&value);
 			write(pipe1[1], &value, 1);
 			write(pipe1[1], "\n", 1);
 		}while(value < 0 || value >3);
@@ -61,14 +69,17 @@ int chamaJogo()
 			bytes = read(pipe2[0], resp, strlen(resp));
 			resp[bytes] = '\0';
 			//enviar info lida para o cliente pelo named pipe
+			printf("resp = %s\n",resp);
 
 			bytes = read(pipe2[0], resp, strlen(resp));
 			resp[bytes] = '\0';
 			//enviar info lida para o cliente pelo named pipe
+			printf("resp = %s\n",resp);
 		}
 	}while(value != 0);
 	bytes = read(pipe2[0], &pont, 1);
 	//enviar info lida para o cliente pelo named pipe
+	printf("resp = %s\n",resp);
 }
 
 void terminaJogo()
@@ -76,6 +87,7 @@ void terminaJogo()
 	close(pipe2[0]);
 	kill(filho, SIGUSR2);
 }
+*/
 void comandosMenu()
 {
 	printf("==========Configuracoes==========\n");
@@ -132,7 +144,7 @@ int main(int argc, char *argv[])
 	int fd_serv;
 	char fifo_name[20];
 	int espera;
-	int bytes;
+	int bytes = 0;
 	char gamedir[TAM] = GAMEDIR;
 	int maxplayers = MAXPLAYER;
 	a.nclientes = 0;
@@ -141,17 +153,22 @@ int main(int argc, char *argv[])
 	int res;
 	int pipe1[2];
 	int pipe2[2];
+	int filho;
 
+	setbuf(stdout,NULL);
+	/*
 	if (access(SERV_PIPE, F_OK) == 0) //verificar se ja existe algum servidor a correr
 	{
 		fprintf(stderr, "[Erro] O servidor já existe.\n");
 		exit(0);
 	}
+	
 	if (mkfifo(SERV_PIPE, 0600) == -1) //verifica se conseguiu criar o named pipe
 	{
 		fprintf(stderr, "[Erro]na Criação do pipe do servidor.\n");
 		exit(0);
 	}
+	*/
 	if (pipe(pipe1) == -1) //verifica se conseguiu criar o pipe1
 	{
 		fprintf(stderr, "Erro na Criação do Pipe");
@@ -189,35 +206,77 @@ int main(int argc, char *argv[])
 
 	printf("gamedir = %s;maxplayers = %d\n", gamedir, maxplayers);
 
-	pthread_t *threads; //Thread que verifica a duracao do campeonato
-	threads = (pthread_t *)malloc(sizeof(pthread_t));
-	/*
-	pipe(pipe1);
-	pipe(pipe2);
+	//pthread_t *threads; //Thread que verifica a duracao do campeonato
+	//threads = (pthread_t *)malloc(sizeof(pthread_t));
+	
+	//pipe(pipe1);
+	//pipe(pipe2);
 	res = fork();
+	char resp[1000];
+	int input;
 	//pthread_create(threads, NULL, (void *)duracao_campeonato, NULL);
-	if (res == 0)
+	if(res == -1){
+		printf("Fork falhou.\n");
+		exit(0);
+	}
+	else if (res == 0)
 	{
 		// Processo filho
 		//Falta gerar um nr aleatorio para escolher um jogo da diretoria
 		//pipe1 -> write || pipe2 -> read
-		pthread_create(threads, NULL, (void *)duracao_campeonato, NULL); //Thread para começar a contar a duracao do campeonato
+		//pthread_create(threads, NULL, (void *)duracao_campeonato, NULL); //Thread para começar a contar a duracao do campeonato
 		close(pipe1[1]);												 //fechar parte escrita pipe1
 		close(pipe2[0]);												 //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0);												 //redirecionamos a escrita do pipe1
 		dup2(pipe2[1], 1);												 //redirecionamos a leitra do pipe2
-
-		execl("/Jogo/G_004", "G_004", NULL);
-		free(threads);
+		//printf("OLA\n");
+	    //execl("G_004", "G_004", NULL);
+		//printf("Vou chamar o execl\n");
+		execl("teste", "teste", NULL);
+		//printf("Ja chamei o execl\n");
+		
+		//exit(0);
+		//free(threads);
 	}
 	else
 	{
 		//Processo Pai
+		//printf("ola\n");
 		close(pipe1[0]);
 		close(pipe2[1]);
-		*/
+		printf("Cheguei ao processo pai\n");
+		fflush(stdout);
+		while(1){
+			printf("Entrei no WHILE(1).\n");
+			sleep(1);
+			bytes = read(pipe2[0], resp, strlen(resp));
+			
+			if(bytes == -1){
+				fprintf(stderr,"O pipe nao conseguiu ler informacao.\n");
+				//exit(0);
+			}
+		
+			resp[bytes] = '\0';
+			fprintf((stdout, "%s"),(char *)resp[0]);
+			//fprintf((stdout,"Resp = %s\n"),resp[0]);
+			scanf("%d",&input);
+			//input[strlen(input)+1] = '\0';
+			//input[strlen(input)] = '\n';
+			bytes = write(pipe1[1], &input, sizeof(input));
+			if(bytes == -1){
+				fprintf(stderr,"O pipe nao conseguiu escrever informacao.\n");
+				exit(0);
+			}
+			
+		}
+		printf("xau\n");
+	}
+	return 0;
+}
+		
 
 	//Fd_serv trata de logins
+	/*
 	fd_serv = open(SERV_PIPE, O_RDONLY); //abertura do pipe (read only)
 	bytes = read(fd_serv, &a.clientes[a.nclientes], sizeof(Cliente));
 	if (bytes == 0)
@@ -239,7 +298,7 @@ int main(int argc, char *argv[])
 	}
 
 	//write()pontuacao
-	//	}
+	}
 	comandosMenu();
 	do
 	{
@@ -320,3 +379,4 @@ int main(int argc, char *argv[])
 	close(fd_serv);
 	return 0;
 }
+*/
