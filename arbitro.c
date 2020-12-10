@@ -212,8 +212,9 @@ int main(int argc, char *argv[])
 	//pipe(pipe1);
 	//pipe(pipe2);
 	res = fork();
-	char resp[1000];
-	int input;
+	char resp[200];
+	char input[20];
+	int tamanho=50;
 	//pthread_create(threads, NULL, (void *)duracao_campeonato, NULL);
 	if(res == -1){
 		printf("Fork falhou.\n");
@@ -242,34 +243,43 @@ int main(int argc, char *argv[])
 	{
 		//Processo Pai
 		//printf("ola\n");
-		close(pipe1[0]);
-		close(pipe2[1]);
-		printf("Cheguei ao processo pai\n");
-		fflush(stdout);
+		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
+		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
+		//printf("Cheguei ao processo pai\n");
+		//fflush(stdout);
 		while(1){
-			printf("Entrei no WHILE(1).\n");
-			sleep(1);
-			bytes = read(pipe2[0], resp, strlen(resp));
+			//printf("Entrei no WHILE(1).\n");
+		
+			
+			bytes = read(pipe2[0], resp, sizeof(resp));
+			
 			
 			if(bytes == -1){
 				fprintf(stderr,"O pipe nao conseguiu ler informacao.\n");
 				//exit(0);
 			}
 		
+			//fprintf(stdout,"tamanho= %d\n",tamanho);
 			resp[bytes] = '\0';
-			fprintf((stdout, "%s"),(char *)resp[0]);
-			//fprintf((stdout,"Resp = %s\n"),resp[0]);
-			scanf("%d",&input);
+			//fprintf(stdout,"bytes= %d\n",bytes);
+
+			fprintf(stdout,"%s\t",resp);
+		
+		    strcpy(input,"1");
+			//fprintf(stdin,"%d",input);
+			//scanf("%d",&input);
 			//input[strlen(input)+1] = '\0';
 			//input[strlen(input)] = '\n';
-			bytes = write(pipe1[1], &input, sizeof(input));
+			strcat(input,"\n");
+			bytes = write(pipe1[1], &input, strlen(input));
 			if(bytes == -1){
 				fprintf(stderr,"O pipe nao conseguiu escrever informacao.\n");
 				exit(0);
 			}
 			
+			
 		}
-		printf("xau\n");
+		
 	}
 	return 0;
 }
