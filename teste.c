@@ -36,14 +36,11 @@ int main(void){
 
 int main(int argc, char *argv[])
 {
-    int contap1 = 0;
-    int contap2 = 0;
     int ronda = 0;
     int ganha = 0;
-    //char resposta[TAM];
-    int numero = 0;
+    int numero;
     int r;
-    char numero2[20];
+    char objeto[50];
     setbuf(stdout,NULL);
 
     
@@ -70,13 +67,15 @@ int main(int argc, char *argv[])
         do
         {
             printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
-            scanf("%s", numero2);
+            scanf("%s", objeto);
             
-            printf("li %s\n",numero2);
+            printf("li %s\n",objeto);
             /*if (numero2 == 0)
             { //Se o cliente puser #quit o arbitro manda 0
                 flag_termina = 1;
             }*/
+            numero = atoi(objeto);
+
         } while (numero < 0 || numero > 3);
         if (numero != 0)
         {
@@ -98,11 +97,15 @@ int main(int argc, char *argv[])
             {
                 ronda++;
                 PONTUACAO += 1;
-                printf("\nRonda %d Empatada", ronda);
+                printf("\nRonda %d Empatada", ronda); //Recebe 1 ponto por empate
             }
         }
     } while (flag_termina == 0);
+
+    
+    //itoa(PONTUACAO,pontuacao2,10);
     printf("PONT = %d", PONTUACAO);
+
     exit(PONTUACAO);
 
     return 0;

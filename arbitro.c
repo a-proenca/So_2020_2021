@@ -7,81 +7,6 @@ int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
 
 //FAZER A VERIFICACÂO DO NOME ATRAVES DO ARBITRO
 /*
-void IniciaJogo()
-{
-	pipe(pipe1);
-	pipe(pipe2);
-	filho = fork();
-
-	if (filho == 0)
-	{
-		//Processo filho
-		//pipe1 -> write || pipe2 -> read
-		/*
-		close(0);		 //Fechar acesso ao teclado
-		dup(pipe1[0]);	 //Duplicar pipe1[0] na primeira posicao disponivel
-		close(pipe1[0]); //fechar a extremidade de leitura do pipe
-		close(pipe1[1]); //fechar a extremidade de escrita do pipe
-
-		close(1);		 //Fechar acesso ao monitor
-		dup(pipe2[1]);	 //Duplicar pipe2[1] na primeira posicao disponivel
-		close(pipe2[0]); //fechar a extremidade de leitura do pipe
-		close(pipe2[1]); //fechar a extremidade de escrita do pipe
-		execl("/Jogo/G_004", "G_004", NULL);
-		
-		close(pipe1[1]);												 //fechar parte escrita pipe1
-		close(pipe2[0]);												 //fechar parte de leitura do pipe2
-		dup2(pipe1[0], 0);												 //redirecionamos a escrita do pipe1
-		dup2(pipe2[1], 1);												 //redirecionamos a leitra do pipe2
-
-		execl("/Jogo/G_004","/Jogo/G_004",NULL);
-	}
-	
-}
-
-int chamaJogo()
-{
-	int bytes = 0;
-	char resp[256];
-	int value;
-	int pont;
-	close(pipe1[0]);
-	close(pipe2[1]);
-	bytes = read(pipe2[0], resp, strlen(resp));
-	printf("bytes = %d\n",bytes);
-	resp[bytes] = '\0';
-	//enviar info lida para o cliente pelo named pipe
-	printf("resp = %s\n",resp);
-	do
-	{
-
-		do
-		{
-			bytes = read(pipe2[0], resp, strlen(resp));
-			//enviar info lida para o cliente pelo named pipe
-			printf("resp = %s\n",resp);
-			scanf(" %d",&value);
-			write(pipe1[1], &value, 1);
-			write(pipe1[1], "\n", 1);
-		}while(value < 0 || value >3);
-		if (value != 0)
-		{	
-			bytes = read(pipe2[0], resp, strlen(resp));
-			resp[bytes] = '\0';
-			//enviar info lida para o cliente pelo named pipe
-			printf("resp = %s\n",resp);
-
-			bytes = read(pipe2[0], resp, strlen(resp));
-			resp[bytes] = '\0';
-			//enviar info lida para o cliente pelo named pipe
-			printf("resp = %s\n",resp);
-		}
-	}while(value != 0);
-	bytes = read(pipe2[0], &pont, 1);
-	//enviar info lida para o cliente pelo named pipe
-	printf("resp = %s\n",resp);
-}
-
 void terminaJogo()
 {
 	close(pipe2[0]);
@@ -230,46 +155,30 @@ int main(int argc, char *argv[])
 		close(pipe2[0]);												 //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0);												 //redirecionamos a escrita do pipe1
 		dup2(pipe2[1], 1);												 //redirecionamos a leitra do pipe2
-		//printf("OLA\n");
-	    //execl("G_004", "G_004", NULL);
-		//printf("Vou chamar o execl\n");
-		execl("teste", "teste", NULL);
-		//printf("Ja chamei o execl\n");
-		
+		execl("Jogo/G_004", "G_004", NULL);
 		//exit(0);
 		//free(threads);
 	}
 	else
 	{
 		//Processo Pai
-		//printf("ola\n");
+		
 		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
 		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
-		//printf("Cheguei ao processo pai\n");
-		//fflush(stdout);
 		while(1){
-			//printf("Entrei no WHILE(1).\n");
-		
-			
 			bytes = read(pipe2[0], resp, sizeof(resp));
-			
-			
 			if(bytes == -1){
 				fprintf(stderr,"O pipe nao conseguiu ler informacao.\n");
 				//exit(0);
 			}
 		
-			//fprintf(stdout,"tamanho= %d\n",tamanho);
 			resp[bytes] = '\0';
-			//fprintf(stdout,"bytes= %d\n",bytes);
-
+	
 			fprintf(stdout,"%s\t",resp);
 		
 		    strcpy(input,"1");
 			//fprintf(stdin,"%d",input);
 			//scanf("%d",&input);
-			//input[strlen(input)+1] = '\0';
-			//input[strlen(input)] = '\n';
 			strcat(input,"\n");
 			bytes = write(pipe1[1], &input, strlen(input));
 			if(bytes == -1){

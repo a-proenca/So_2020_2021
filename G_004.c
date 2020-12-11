@@ -18,15 +18,17 @@ void termina_jogo()
 }
 
 //O JOGO AGORA NAO E POR RONDAS, PARA FACILITAR OS NAMED PIPES
+
 int main(int argc, char *argv[])
 {
-    int contap1 = 0;
-    int contap2 = 0;
     int ronda = 0;
     int ganha = 0;
-    //char resposta[TAM];
-    int numero = 0;
+    int numero;
     int r;
+    char objeto[50];
+    setbuf(stdout,NULL);
+
+    
 
     if (signal(SIGUSR1, termina_jogo) == SIG_ERR)
     {
@@ -35,7 +37,7 @@ int main(int argc, char *argv[])
     }
     
     srand(time(NULL));
-    
+
     printf("\n---------------------BEM VINDO AO JOGO------------"
            "\n--------------------------------------Regras----------------------------------"
            "\nEscolha um objeto dos 3 possiveis: 1-Pedra 2-Papel 3-Tesoura"
@@ -44,17 +46,20 @@ int main(int argc, char *argv[])
            "\nTesoura ganha Papel"
            "\nPapel ganha Pedra");
     
+   
     do
     {
         do
         {
             printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
-            scanf("%d", &numero);
-
-            if (numero == 0)
+            scanf("%s", objeto);
+            
+            /*if (numero2 == 0)
             { //Se o cliente puser #quit o arbitro manda 0
                 flag_termina = 1;
-            }
+            }*/
+            numero = atoi(objeto);
+
         } while (numero < 0 || numero > 3);
         if (numero != 0)
         {
@@ -76,13 +81,17 @@ int main(int argc, char *argv[])
             {
                 ronda++;
                 PONTUACAO += 1;
-                printf("\nRonda %d Empatada", ronda);
+                printf("\nRonda %d Empatada", ronda); //Recebe 1 ponto por empate
             }
         }
-    } while (flag_termina == 0);
-    printf("PONT = %d", PONTUACAO);
-    exit(PONTUACAO);
+    } while (flag_termina == 0) ;
+
     
+    //itoa(PONTUACAO,pontuacao2,10);
+    printf("PONT = %d", PONTUACAO);
+
+    exit(PONTUACAO);
+
     return 0;
 }
 
