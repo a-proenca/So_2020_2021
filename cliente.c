@@ -3,16 +3,27 @@
 #include <sys/wait.h>
 Cliente c;
 int servpid;
+char fifo_name[20];
 
 void acabou_campeonato()
 {
   printf("Acabou campeonato.\n");
   //falta a parte da pontuacao
 }
+//fazer unlink caso o programa seja interrompido ctrl+c;
+void interrupcao_c(){
+  printf("\nO programa foi Interrompido!");
+  unlink(fifo_name);
+  exit(EXIT_FAILURE);
+}
+void interrupcao_ar(){
+  printf("\nO arbitro foi fechado!");
+  unlink(fifo_name);
+  exit(EXIT_FAILURE);
+}
 
 int main(int argc, char argv[])
 {
-  char fifo_name[20];
   int fd_serv;
   int nb;
   int fd_cli;
@@ -20,6 +31,24 @@ int main(int argc, char argv[])
   int bytes;
   char instrucao[TAM];
 
+   if (signal(SIGINT, interrupcao_c) == SIG_ERR)
+    {
+        printf("\n [ERRO] Nao foi possivel configurar o sinal SIGINT\n");
+        exit(EXIT_FAILURE);
+    }
+  
+   if (signal(SIGQUIT, interrupcao_c) == SIG_ERR)
+    {
+        printf("\n [ERRO] Nao foi possivel configurar o sinal SIGQUIT\n");
+        exit(EXIT_FAILURE);
+    }
+  
+  if(signal(SIGUSR2, interrupcao_ar) == SIG_ERR)
+    {
+      printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR2\n");
+      exit(EXIT_FAILURE); 
+    }
+  
   if (access(SERV_PIPE, F_OK) != 0)
   { //verifica se existe um servidor a correr
     printf("[Erro]Nao existe nenhum servidor ativo.\n");
@@ -67,7 +96,7 @@ int main(int argc, char argv[])
   {
     printf("[Erro]Nao conseguiu ler nada do pipe.\n");
   }
-  printf("Li do servidor: %s\n", teste);
+  printf("servidor: %s\n", teste);
 
   do
   {
@@ -91,6 +120,7 @@ int main(int argc, char argv[])
     }
   } while (c.sair != 1);
   close(fd_cli);
-  unlink(CLIENT_PIPE);
+  unlink(fifo_name);
   return 0;
 }
+

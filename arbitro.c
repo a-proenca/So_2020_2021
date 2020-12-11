@@ -3,6 +3,7 @@
 #define MAXPLAYER 30   //caso nao exista v.ambiente fica com este valor
 int duracao;
 Arbitro a;
+
 int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
 
 //FAZER A VERIFICACÂO DO NOME ATRAVES DO ARBITRO
@@ -13,6 +14,17 @@ void terminaJogo()
 	kill(filho, SIGUSR2);
 }
 */
+
+void interrupcao(){
+  
+  printf("\nO arbitro foi Interrompido!");
+  for(int i=0; i<a.nclientes; i++){
+	  kill(a.clientes[i].pid, SIGUSR2);
+  }
+  unlink(SERV_PIPE);
+  exit(EXIT_FAILURE);
+}
+
 void comandosMenu()
 {
 	printf("==========Configuracoes==========\n");
@@ -80,8 +92,20 @@ int main(int argc, char *argv[])
 	int pipe2[2];
 	int filho;
 
+	if (signal(SIGINT, interrupcao) == SIG_ERR)
+    {
+        printf("\n [ERRO] Nao foi possivel configurar o sinal SIGINT\n");
+        exit(EXIT_FAILURE);
+    }
+  
+   if (signal(SIGQUIT, interrupcao) == SIG_ERR)
+    {
+        printf("\n [ERRO] Nao foi possivel configurar o sinal SIGQUIT\n");
+        exit(EXIT_FAILURE);
+    }
+
 	setbuf(stdout,NULL);
-	/*
+	
 	if (access(SERV_PIPE, F_OK) == 0) //verificar se ja existe algum servidor a correr
 	{
 		fprintf(stderr, "[Erro] O servidor já existe.\n");
@@ -93,7 +117,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "[Erro]na Criação do pipe do servidor.\n");
 		exit(0);
 	}
-	*/
+	
 	if (pipe(pipe1) == -1) //verifica se conseguiu criar o pipe1
 	{
 		fprintf(stderr, "Erro na Criação do Pipe");
@@ -165,7 +189,7 @@ int main(int argc, char *argv[])
 		
 		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
 		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
-		while(1){
+		//while(1){
 			bytes = read(pipe2[0], resp, sizeof(resp));
 			if(bytes == -1){
 				fprintf(stderr,"O pipe nao conseguiu ler informacao.\n");
@@ -187,15 +211,12 @@ int main(int argc, char *argv[])
 			}
 			
 			
-		}
+		//}
 		
 	}
-	return 0;
-}
-		
-
+	
 	//Fd_serv trata de logins
-	/*
+	
 	fd_serv = open(SERV_PIPE, O_RDONLY); //abertura do pipe (read only)
 	bytes = read(fd_serv, &a.clientes[a.nclientes], sizeof(Cliente));
 	if (bytes == 0)
@@ -217,7 +238,7 @@ int main(int argc, char *argv[])
 	}
 
 	//write()pontuacao
-	}
+	
 	comandosMenu();
 	do
 	{
@@ -296,6 +317,6 @@ int main(int argc, char *argv[])
 	} while (FLAG_TERMINA == 0);
 	unlink(SERV_PIPE);
 	close(fd_serv);
+
 	return 0;
 }
-*/
