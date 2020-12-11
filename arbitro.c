@@ -25,6 +25,7 @@ void interrupcao(){
   exit(EXIT_FAILURE);
 }
 
+
 void comandosMenu()
 {
 	printf("==========Configuracoes==========\n");
@@ -78,6 +79,8 @@ char *devolve_nome(char comando[TAM])
 int main(int argc, char *argv[])
 {
 	int fd_cli;
+	int pont_exit;
+	int status;
 	int fd_serv;
 	char fifo_name[20];
 	int espera;
@@ -155,6 +158,8 @@ int main(int argc, char *argv[])
 
 	printf("gamedir = %s;maxplayers = %d\n", gamedir, maxplayers);
 
+	//pthread_t logins
+
 	//pthread_t *threads; //Thread que verifica a duracao do campeonato
 	//threads = (pthread_t *)malloc(sizeof(pthread_t));
 	
@@ -213,8 +218,6 @@ int main(int argc, char *argv[])
 			
 		//}
 		
-	}
-	
 	//Fd_serv trata de logins
 	
 	fd_serv = open(SERV_PIPE, O_RDONLY); //abertura do pipe (read only)
@@ -315,8 +318,18 @@ int main(int argc, char *argv[])
 			FLAG_TERMINA = 1;
 		}
 	} while (FLAG_TERMINA == 0);
-	unlink(SERV_PIPE);
-	close(fd_serv);
+  }
+  if( waitpid(res, &status, 0) == -1){
+		perror("waitpid falhou!");
+		return EXIT_FAILURE;
+	}
 
+	if(WIFEXITED(status) ){
+		pont_exit = WEXITSTATUS(status)
+		printf("A PONTUACAO FINAL FOI: %d\n",pont_exit);
+	}
+
+  	unlink(SERV_PIPE);
+	close(fd_serv);
 	return 0;
 }
