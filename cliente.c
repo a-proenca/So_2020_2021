@@ -12,13 +12,15 @@ void acabou_campeonato()
   //falta a parte da pontuacao
 }
 //fazer unlink caso o programa seja interrompido ctrl+c;
-void interrupcao_c(){
+void interrupcao_c()
+{
   printf("\nO programa foi Interrompido!");
   unlink(fifo_name);
   unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
 }
-void interrupcao_ar(){
+void interrupcao_ar()
+{
   printf("\nO arbitro foi fechado!");
   unlink(fifo_name);
   unlink(fifo_name_serv);
@@ -28,51 +30,49 @@ void interrupcao_ar(){
 int main(int argc, char argv[])
 {
   int fd_serv;
-  int nb;
-  int fd_cli_s;
   int fd_cli;
-  char mensagem_serv[50];
+  char mensagem_serv[100];
   int bytes;
   char instrucao[TAM];
 
-   if (signal(SIGINT, interrupcao_c) == SIG_ERR)
-    {
-        printf("\n [ERRO] Nao foi possivel configurar o sinal SIGINT\n");
-        exit(EXIT_FAILURE);
-    }
-  
-   if (signal(SIGQUIT, interrupcao_c) == SIG_ERR)
-    {
-        printf("\n [ERRO] Nao foi possivel configurar o sinal SIGQUIT\n");
-        exit(EXIT_FAILURE);
-    }
-  
-  if(signal(SIGUSR2, interrupcao_ar) == SIG_ERR)
-    {
-      printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR2\n");
-      exit(EXIT_FAILURE); 
-    }
-  
+  if (signal(SIGINT, interrupcao_c) == SIG_ERR)
+  {
+    printf("\n [ERRO] Nao foi possivel configurar o sinal SIGINT\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (signal(SIGQUIT, interrupcao_c) == SIG_ERR)
+  {
+    printf("\n [ERRO] Nao foi possivel configurar o sinal SIGQUIT\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (signal(SIGUSR2, interrupcao_ar) == SIG_ERR)
+  {
+    printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR2\n");
+    exit(EXIT_FAILURE);
+  }
+
   if (access(SERV_PIPE, F_OK) != 0)
   { //verifica se existe um servidor a correr
     printf("[Erro]Nao existe nenhum servidor ativo.\n");
     exit(EXIT_FAILURE);
   }
   sprintf(fifo_name_serv, SERV_PIPE_WR, getpid());
-  sprintf(fifo_name,CLIENT_PIPE,getpid());
+  sprintf(fifo_name, CLIENT_PIPE, getpid());
 
-  if (access(fifo_name, F_OK) == 0)
+  if (access(fifo_name_serv, F_OK) == 0)
   { // verifica se o pipe ja esta aberto
     printf("\n[ERRO] Cliente ja existe.\n");
     exit(EXIT_FAILURE);
   }
 
-  if (mkfifo(fifo_name, 0600) == -1)
+  if (mkfifo(fifo_name_serv, 0600) == -1)
   {
     printf("\n[ERRO] Erro ao criar o pipe do cliente (mkfifo)");
     exit(EXIT_FAILURE);
   }
-  
+
   if (signal(SIGUSR1, acabou_campeonato) == SIG_ERR)
   {
     printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR1\n");
@@ -81,8 +81,9 @@ int main(int argc, char argv[])
 
   fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
   c.pontuacao = 0;
+  c.atendido = 0;
   c.pid = getpid();
-  strcpy(c.nome_jogo,"");
+  strcpy(c.nome_jogo, "");
   c.sair = 0;
 
   printf("\nIndique o seu nome:");
@@ -92,8 +93,10 @@ int main(int argc, char argv[])
   {
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
+  //close(fd_serv);
 
-  fd_cli_s = open(SERV_PIPE_WR, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
+  //sprintf(fifo_name, SERV_PIPE_WR, c.pid);			
+  fd_cli = open(fifo_name_serv, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
   bytes = read(fd_cli, &mensagem_serv, sizeof(mensagem_serv));
   if (bytes == 0)
   {
@@ -101,9 +104,15 @@ int main(int argc, char argv[])
   }
   printf("servidor: %s\n", mensagem_serv);
   
-close(fd_cli_s);
+  if (strcasecmp(mensagem_serv, "Bem-vindo Cliente!") != 0)
+  {
+    c.sair = 1;
+  }
+  
 
-  do
+  close(fd_cli);
+
+  while (c.sair != 1)
   {
     fflush(stdout);
     fgets(instrucao, TAM, stdin);
@@ -123,11 +132,10 @@ close(fd_cli_s);
     {
       c.sair = 1;
     }
-  } while (c.sair != 1);
-   //mandar ao servidor para dar quit!
+  }
+  //mandar ao servidor para dar quit!
 
   close(fd_cli);
   unlink(fifo_name);
   return 0;
 }
-

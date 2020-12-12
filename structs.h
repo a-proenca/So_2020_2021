@@ -8,9 +8,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #define TAM 50
-#define SERV_PIPE "pipe_servidor" //TRATA DOS LOGINS! 
-#define SERV_PIPE_WR "server_c%d"  
-#define CLIENT_PIPE "client_%d" 
+#define SERV_PIPE "pipe_servidor" //Trata de logins (arbitro <- cliente)
+#define SERV_PIPE_WR "server_c%d"  //Trata de info do arbitro -> cliente
+#define CLIENT_PIPE "client_%d"    //Trata 
 
 //estrutura jogo
 typedef struct jogo
