@@ -25,6 +25,40 @@ void interrupcao(){
   exit(EXIT_FAILURE);
 }
 
+void* trata_logins(){
+	char fifo_name[50];
+	do{
+
+    int fd_serv;
+	int fd_client;
+	int bytes;
+
+	fd_serv = open(SERV_PIPE, O_RDONLY); //abertura do pipe (read only)
+	bytes = read(fd_serv, &a.clientes[a.nclientes], sizeof(Cliente));
+	if (bytes == 0)
+	{
+		printf("[Erro]Nao conseguiu ler nada do pipe.\n");
+	}
+	a.nclientes++; //vou adicionar um cliente
+	if(a.clientes->atendido!=1){
+		
+		sprintf(fifo_name, SERV_PIPE_WR, a.clientes[a.nclientes - 1].pid);
+		a.clientes->atendido=1;
+		strcpy(a.clientes->nome_pipe_escrita,fifo_name);
+		fd_client=open(a.clientes->nome_pipe_escrita,O_WRONLY);
+		printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes - 1].nome);
+		//close(fd_serv);??
+		bytes = write(fd_client, "Bem-vindo Cliente!", sizeof("Bem-vindo Cliente!"));
+		if (bytes == 0)
+		{
+		printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
+		}
+		close(fd_client);
+	}
+
+	}while(1);
+}
+
 
 void comandosMenu()
 {
@@ -120,7 +154,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "[Erro]na Criação do pipe do servidor.\n");
 		exit(0);
 	}
-	
+
+
 	if (pipe(pipe1) == -1) //verifica se conseguiu criar o pipe1
 	{
 		fprintf(stderr, "Erro na Criação do Pipe");
@@ -158,18 +193,27 @@ int main(int argc, char *argv[])
 
 	printf("gamedir = %s;maxplayers = %d\n", gamedir, maxplayers);
 
+    pthread_t *logins;
+	logins = (pthread_t *)malloc(sizeof(pthread_t));
+
+	pthread_create(logins,NULL,(void *) trata_logins,NULL);
 	//pthread_t logins
 
-	//pthread_t *threads; //Thread que verifica a duracao do campeonato
-	//threads = (pthread_t *)malloc(sizeof(pthread_t));
-	
+	pthread_t *threads; //Thread que verifica a duracao do campeonato
+	threads = (pthread_t *)malloc(sizeof(pthread_t));
+/*
+	if(a.nclientes>=2){
+	pthread_create(threads, NULL, (void *)duracao_campeonato, NULL);
+
+	}
+*/	
 	//pipe(pipe1);
 	//pipe(pipe2);
 	res = fork();
 	char resp[200];
 	char input[20];
 	int tamanho=50;
-	//pthread_create(threads, NULL, (void *)duracao_campeonato, NULL);
+	
 	if(res == -1){
 		printf("Fork falhou.\n");
 		exit(0);
@@ -179,7 +223,6 @@ int main(int argc, char *argv[])
 		// Processo filho
 		//Falta gerar um nr aleatorio para escolher um jogo da diretoria
 		//pipe1 -> write || pipe2 -> read
-		//pthread_create(threads, NULL, (void *)duracao_campeonato, NULL); //Thread para começar a contar a duracao do campeonato
 		close(pipe1[1]);												 //fechar parte escrita pipe1
 		close(pipe2[0]);												 //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0);												 //redirecionamos a escrita do pipe1
@@ -219,7 +262,7 @@ int main(int argc, char *argv[])
 		//}
 		
 	//Fd_serv trata de logins
-	
+/*	
 	fd_serv = open(SERV_PIPE, O_RDONLY); //abertura do pipe (read only)
 	bytes = read(fd_serv, &a.clientes[a.nclientes], sizeof(Cliente));
 	if (bytes == 0)
@@ -231,7 +274,7 @@ int main(int argc, char *argv[])
 
 	sprintf(fifo_name, CLIENT_PIPE, a.clientes[a.nclientes - 1].pid);
 	fd_cli = open(fifo_name, O_WRONLY); //fd_cli trata de enviar info
-
+	
 	//>>falta ir buscar a pontuacao ao jogos dar a pontuacao c.pontuacao = x;
 	//bytes=write(fd_serv,&c,sizeof(Cliente));
 	bytes = write(fd_cli, "Bem-vindo Cliente!", sizeof("Bem-vindo Cliente!"));
@@ -239,7 +282,7 @@ int main(int argc, char *argv[])
 	{
 		printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
 	}
-
+*/
 	//write()pontuacao
 	
 	comandosMenu();
@@ -325,7 +368,7 @@ int main(int argc, char *argv[])
 	}
 
 	if(WIFEXITED(status) ){
-		pont_exit = WEXITSTATUS(status)
+		pont_exit = WEXITSTATUS(status);
 		printf("A PONTUACAO FINAL FOI: %d\n",pont_exit);
 	}
 

@@ -3,7 +3,8 @@
 #include <sys/wait.h>
 Cliente c;
 int servpid;
-char fifo_name[20];
+char fifo_name[50];
+char fifo_name_serv[50];
 
 void acabou_campeonato()
 {
@@ -14,11 +15,13 @@ void acabou_campeonato()
 void interrupcao_c(){
   printf("\nO programa foi Interrompido!");
   unlink(fifo_name);
+  unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
 }
 void interrupcao_ar(){
   printf("\nO arbitro foi fechado!");
   unlink(fifo_name);
+  unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
 }
 
@@ -26,8 +29,9 @@ int main(int argc, char argv[])
 {
   int fd_serv;
   int nb;
+  int fd_cli_s;
   int fd_cli;
-  char teste[50];
+  char mensagem_serv[50];
   int bytes;
   char instrucao[TAM];
 
@@ -54,7 +58,8 @@ int main(int argc, char argv[])
     printf("[Erro]Nao existe nenhum servidor ativo.\n");
     exit(EXIT_FAILURE);
   }
-  sprintf(fifo_name, CLIENT_PIPE, getpid());
+  sprintf(fifo_name_serv, SERV_PIPE_WR, getpid());
+  sprintf(fifo_name,CLIENT_PIPE,getpid());
 
   if (access(fifo_name, F_OK) == 0)
   { // verifica se o pipe ja esta aberto
@@ -67,16 +72,7 @@ int main(int argc, char argv[])
     printf("\n[ERRO] Erro ao criar o pipe do cliente (mkfifo)");
     exit(EXIT_FAILURE);
   }
-  c.pontuacao = 0;
-  c.pid = getpid();
-  strcpy(c.nome_jogo,"");
-  c.sair = 0;
-
-  printf("\nIndique o seu nome: ");
-  scanf("%s", c.nome);
-
-  printf("Nome = %s\n", c.nome);
-
+  
   if (signal(SIGUSR1, acabou_campeonato) == SIG_ERR)
   {
     printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR1\n");
@@ -84,19 +80,28 @@ int main(int argc, char argv[])
   }
 
   fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
+  c.pontuacao = 0;
+  c.pid = getpid();
+  strcpy(c.nome_jogo,"");
+  c.sair = 0;
+
+  printf("\nIndique o seu nome:");
+  scanf("%s", c.nome);
   bytes = write(fd_serv, &c, sizeof(Cliente));
   if (bytes == 0)
   {
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
 
-  fd_cli = open(fifo_name, O_RDONLY); // Recebe info do servidor
-  bytes = read(fd_cli, &teste, sizeof(teste));
+  fd_cli_s = open(SERV_PIPE_WR, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
+  bytes = read(fd_cli, &mensagem_serv, sizeof(mensagem_serv));
   if (bytes == 0)
   {
     printf("[Erro]Nao conseguiu ler nada do pipe.\n");
   }
-  printf("servidor: %s\n", teste);
+  printf("servidor: %s\n", mensagem_serv);
+  
+close(fd_cli_s);
 
   do
   {
@@ -119,6 +124,8 @@ int main(int argc, char argv[])
       c.sair = 1;
     }
   } while (c.sair != 1);
+   //mandar ao servidor para dar quit!
+
   close(fd_cli);
   unlink(fifo_name);
   return 0;

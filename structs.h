@@ -8,8 +8,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #define TAM 50
-#define SERV_PIPE "pipe_servidor"
-#define CLIENT_PIPE "client_%d"
+#define SERV_PIPE "pipe_servidor" //TRATA DOS LOGINS! 
+#define SERV_PIPE_WR "server_c%d"  
+#define CLIENT_PIPE "client_%d" 
 
 //estrutura jogo
 typedef struct jogo
@@ -23,7 +24,10 @@ typedef struct cliente
 {
     int pontuacao;
     int pid;
+    int atendido; 
     char nome[TAM]; //Tem de ser unico
+    char nome_pipe_escrita[TAM];
+    char nome_pipe_leitura[TAM];
     char nome_jogo[TAM]; //Nome do jogo    
     int sair; //1- sai do jogo 
 } Cliente;
