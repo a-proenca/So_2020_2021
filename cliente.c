@@ -3,6 +3,7 @@
 #include <sys/wait.h>
 Cliente c;
 int servpid;
+int fd_serv;
 char fifo_name[50];
 char fifo_name_serv[50];
 
@@ -14,14 +15,21 @@ void acabou_campeonato()
 //fazer unlink caso o programa seja interrompido ctrl+c;
 void interrupcao_c()
 {
-  printf("\nO programa foi Interrompido!\n");
+  int bytes;
+  c.sair = 1;
+  printf("\nO programa foi interrompido!\n");
+  bytes = write(fd_serv, &c, sizeof(Cliente));
+  if (bytes == 0)
+  {
+    printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
+  }
   unlink(fifo_name);
   unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
 }
 void interrupcao_ar()
 {
-  printf("\nO jogador foi Suspendido ou o Arbitro foi fechado!\n");
+  printf("\nO jogador foi encerrado pelo arbitro!\n");
   unlink(fifo_name);
   unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
@@ -29,7 +37,6 @@ void interrupcao_ar()
 
 int main(int argc, char argv[])
 {
-  int fd_serv;
   int fd_cli;
   char mensagem_serv[100];
   int bytes;

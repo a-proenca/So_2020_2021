@@ -4,8 +4,6 @@
 int duracao;
 int espera;
 Arbitro a;
-int pid_filho;
-
 
 int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
 
@@ -14,15 +12,10 @@ void interrupcao()
 	printf("\nO arbitro foi Interrompido!\n");
 	for (int i = 0; i < a.nclientes; i++)
 	{
-		kill(a.clientes[i].pid, SIGUSR2);
+		kill(a.clientes[i].pid, SIGINT);
 	}
 	unlink(SERV_PIPE);
 	exit(EXIT_FAILURE);
-}
-
-void kick_jogo(int pid)
-{
-	kill(pid,SIGUSR1);
 }
 
 //Funcao que devolve 1 se encontrar um nome igual
@@ -47,7 +40,7 @@ void eliminaCliente(char *nome)
 				a.clientes[j] = a.clientes[j + 1];
 			}
 			a.nclientes--;
-			printf("O cliente %s foi eliminado.\n",nome);
+			printf("O cliente %s foi eliminado.\n", nome);
 		}
 	}
 }
@@ -141,7 +134,6 @@ void *jogo(void *dados)
 	int tamanho = 50;
 	int status;
 	int pont_exit;
-	
 
 	if (res == -1)
 	{
@@ -153,7 +145,6 @@ void *jogo(void *dados)
 		// Processo filho
 		//Falta gerar um nr aleatorio para escolher um jogo da diretoria
 		//pipe1 -> write || pipe2 -> read
-		pid_filho=getpid();
 		close(pipe1[1]);   //fechar parte escrita pipe1
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
@@ -206,13 +197,16 @@ void *jogo(void *dados)
 void *campeonato(void *dados)
 {
 	int dur = duracao, esp = espera;
-	while (a.nclientes < 2 && FLAG_TERMINA == 0)
-		sleep(1);
 	do
 	{
-		sleep(1);
-		esp--;
-	} while (esp > 0 && FLAG_TERMINA == 0);
+		while (a.nclientes < 2 && FLAG_TERMINA == 0)
+			sleep(1);
+		do
+		{
+			sleep(1);
+			esp--;
+		} while (esp > 0 && FLAG_TERMINA == 0);
+	} while (a.nclientes < 2 && FLAG_TERMINA == 0);
 	printf("Comecou campeonato\n");
 	pthread_t *thread_jogo; //Thread que inicia o jogo
 	thread_jogo = (pthread_t *)malloc(sizeof(pthread_t));
@@ -352,28 +346,26 @@ int main(int argc, char *argv[])
 		}
 		else if (strcasecmp(comando, "games") == 0)
 		{
-			if(fork()==0){
-				execl("/bin/ls","ls",gamedir,NULL);
+			if (fork() == 0)
+			{
+				execl("/bin/ls", "ls", gamedir, NULL);
 			}
-			else{
-				sleep(2);
+			else
+			{
+				sleep(1);
 			}
 		}
 		else if (comando[0] == 'k')
 		{
-			//falta implementar
-			printf("O comando inserido foi %s\n", comando);
 			strcpy(comando, devolve_nome(comando));
-			for(int i=0; i<a.nclientes;i++){
-				if(strcasecmp(a.clientes[i].nome, comando) == 0){
-					kill(a.clientes[i].pid,SIGUSR2);
-					eliminaCliente(a.clientes[i].nome);
+			for (int i = 0; i < a.nclientes; i++)
+			{
+				if (strcasecmp(a.clientes[i].nome, comando) == 0)
+				{
+					kill(a.clientes[i].pid, SIGUSR2);
 				}
 			}
-			
-			//printf("O nome do jogador e: %s\n", comando);
-			//kick_jogo(pid_filho);
-			
+			eliminaCliente(comando);
 		}
 		else if (comando[0] == 's')
 		{
