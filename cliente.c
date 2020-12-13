@@ -14,14 +14,14 @@ void acabou_campeonato()
 //fazer unlink caso o programa seja interrompido ctrl+c;
 void interrupcao_c()
 {
-  printf("\nO programa foi Interrompido!");
+  printf("\nO programa foi Interrompido!\n");
   unlink(fifo_name);
   unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
 }
 void interrupcao_ar()
 {
-  printf("\nO arbitro foi fechado!");
+  printf("\nO arbitro foi fechado!\n");
   unlink(fifo_name);
   unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
@@ -93,9 +93,7 @@ int main(int argc, char argv[])
   {
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
-  //close(fd_serv);
-
-  //sprintf(fifo_name, SERV_PIPE_WR, c.pid);			
+	
   fd_cli = open(fifo_name_serv, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
   bytes = read(fd_cli, &mensagem_serv, sizeof(mensagem_serv));
   if (bytes == 0)
@@ -136,6 +134,6 @@ int main(int argc, char argv[])
   //mandar ao servidor para dar quit!
 
   close(fd_cli);
-  unlink(fifo_name);
+  unlink(fifo_name_serv);
   return 0;
 }

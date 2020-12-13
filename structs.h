@@ -10,7 +10,7 @@
 #define TAM 50
 #define SERV_PIPE "pipe_servidor" //Trata de logins (arbitro <- cliente)
 #define SERV_PIPE_WR "server_c%d"  //Trata de info do arbitro -> cliente
-#define CLIENT_PIPE "client_%d"    //Trata 
+#define CLIENT_PIPE "client_%d"
 
 //estrutura jogo
 typedef struct jogo
