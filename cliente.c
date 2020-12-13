@@ -21,7 +21,7 @@ void interrupcao_c()
 }
 void interrupcao_ar()
 {
-  printf("\nO arbitro foi fechado!\n");
+  printf("\nO jogador foi Suspendido ou o Arbitro foi fechado!\n");
   unlink(fifo_name);
   unlink(fifo_name_serv);
   exit(EXIT_FAILURE);

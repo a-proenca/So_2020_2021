@@ -4,6 +4,8 @@
 int duracao;
 int espera;
 Arbitro a;
+int pid_filho;
+
 
 int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
 
@@ -16,6 +18,11 @@ void interrupcao()
 	}
 	unlink(SERV_PIPE);
 	exit(EXIT_FAILURE);
+}
+
+void kick_jogo(int pid)
+{
+	kill(pid,SIGUSR1);
 }
 
 //Funcao que devolve 1 se encontrar um nome igual
@@ -134,6 +141,7 @@ void *jogo(void *dados)
 	int tamanho = 50;
 	int status;
 	int pont_exit;
+	
 
 	if (res == -1)
 	{
@@ -145,6 +153,7 @@ void *jogo(void *dados)
 		// Processo filho
 		//Falta gerar um nr aleatorio para escolher um jogo da diretoria
 		//pipe1 -> write || pipe2 -> read
+		pid_filho=getpid();
 		close(pipe1[1]);   //fechar parte escrita pipe1
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
@@ -355,7 +364,16 @@ int main(int argc, char *argv[])
 			//falta implementar
 			printf("O comando inserido foi %s\n", comando);
 			strcpy(comando, devolve_nome(comando));
-			printf("O nome do jogador e: %s\n", comando);
+			for(int i=0; i<a.nclientes;i++){
+				if(strcasecmp(a.clientes[i].nome, comando) == 0){
+					kill(a.clientes[i].pid,SIGUSR2);
+					eliminaCliente(a.clientes[i].nome);
+				}
+			}
+			
+			//printf("O nome do jogador e: %s\n", comando);
+			//kick_jogo(pid_filho);
+			
 		}
 		else if (comando[0] == 's')
 		{
