@@ -343,17 +343,11 @@ int main(int argc, char *argv[])
 		}
 		else if (strcasecmp(comando, "games") == 0)
 		{
-			if (a.n_jogos == 0)
-			{
-				printf("\n Nenhum jogo disponivel!\n");
+			if(fork()==0){
+				execl("/bin/ls","ls",gamedir,NULL);
 			}
-			else
-			{
-				printf("\nJogos disponiveis: \n");
-				for (int i = 0; i < a.n_jogos; i++)
-				{
-					printf("Jogo %d: %s\n", i + 1, a.jogos->identificacao);
-				}
+			else{
+				sleep(2);
 			}
 		}
 		else if (comando[0] == 'k')
