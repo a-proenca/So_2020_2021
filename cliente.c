@@ -93,7 +93,7 @@ int main(int argc, char argv[])
   {
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
-	
+
   fd_cli = open(fifo_name_serv, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
   bytes = read(fd_cli, &mensagem_serv, sizeof(mensagem_serv));
   if (bytes == 0)
@@ -101,12 +101,11 @@ int main(int argc, char argv[])
     printf("[Erro]Nao conseguiu ler nada do pipe.\n");
   }
   printf("servidor: %s\n", mensagem_serv);
-  
+
   if (strcasecmp(mensagem_serv, "Bem-vindo Cliente!") != 0)
   {
     c.sair = 1;
   }
-  
 
   close(fd_cli);
 
@@ -132,7 +131,11 @@ int main(int argc, char argv[])
     }
   }
   //mandar ao servidor para dar quit!
-
+  bytes = write(fd_serv, &c, sizeof(Cliente));
+  if (bytes == 0)
+  {
+    printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
+  }
   close(fd_cli);
   unlink(fifo_name_serv);
   return 0;

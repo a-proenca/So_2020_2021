@@ -28,6 +28,22 @@ int verificaNome(char *nome)
 	}
 	return 0;
 }
+
+void eliminaCliente(char *nome)
+{
+	for (int i = 0; i < a.nclientes; i++)
+	{
+		if (strcasecmp(a.clientes[i].nome, nome) == 0)
+		{
+			for (int j = i; j < a.nclientes - 1; j++)
+			{
+				a.clientes[j] = a.clientes[j + 1];
+			}
+			a.nclientes--;
+			printf("O cliente %s foi eliminado.\n",nome);
+		}
+	}
+}
 void *trata_logins()
 {
 	char fifo_name[50];
@@ -40,19 +56,33 @@ void *trata_logins()
 	do
 	{
 		read(fd_serv, &aux, sizeof(Cliente)); //Leio o cliente
-		if (verificaNome(aux.nome) == 0) //Verificacao do nome
+		if (aux.sair == 0)
 		{
-			a.clientes[a.nclientes] = aux;
-			a.nclientes++; //vou adicionar um cliente
-			if (a.clientes[a.nclientes - 1].atendido != 1)
+			if (verificaNome(aux.nome) == 0) //Verificacao do nome
 			{
-				sprintf(fifo_name, SERV_PIPE_WR, a.clientes[a.nclientes - 1].pid);
-				a.clientes[a.nclientes - 1].atendido = 1;
-				strcpy(a.clientes[a.nclientes - 1].nome_pipe_escrita, fifo_name);
-				fd_client = open(a.clientes[a.nclientes - 1].nome_pipe_escrita, O_WRONLY);
-				printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes - 1].nome);
+				a.clientes[a.nclientes] = aux;
+				a.nclientes++; //vou adicionar um cliente
+				if (a.clientes[a.nclientes - 1].atendido != 1)
+				{
+					sprintf(fifo_name, SERV_PIPE_WR, a.clientes[a.nclientes - 1].pid);
+					a.clientes[a.nclientes - 1].atendido = 1;
+					strcpy(a.clientes[a.nclientes - 1].nome_pipe_escrita, fifo_name);
+					fd_client = open(a.clientes[a.nclientes - 1].nome_pipe_escrita, O_WRONLY);
+					printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes - 1].nome);
 
-				bytes = write(fd_client, "Bem-vindo Cliente!", sizeof("Bem-vindo Cliente!"));
+					bytes = write(fd_client, "Bem-vindo Cliente!", sizeof("Bem-vindo Cliente!"));
+					if (bytes == 0)
+					{
+						printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
+					}
+					close(fd_client);
+				}
+			}
+			else
+			{
+				sprintf(fifo_name, SERV_PIPE_WR, aux.pid);
+				fd_client = open(fifo_name, O_WRONLY);
+				bytes = write(fd_client, "Ja existe um cliente com esse nome!", sizeof("Ja existe um cliente com esse nome!"));
 				if (bytes == 0)
 				{
 					printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
@@ -62,14 +92,7 @@ void *trata_logins()
 		}
 		else
 		{
-			sprintf(fifo_name, SERV_PIPE_WR, aux.pid);
-			fd_client = open(fifo_name, O_WRONLY);
-			bytes = write(fd_client, "Ja existe um cliente com esse nome!", sizeof("Ja existe um cliente com esse nome!"));
-			if (bytes == 0)
-			{
-				printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
-			}
-			close(fd_client);
+			eliminaCliente(aux.nome);
 		}
 
 	} while (FLAG_TERMINA == 0);
@@ -262,7 +285,6 @@ int main(int argc, char *argv[])
 	}
 
 	setbuf(stdout, NULL);
-
 
 	if (mkfifo(SERV_PIPE, 0600) == -1) //verifica se conseguiu criar o named pipe
 	{
