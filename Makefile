@@ -3,7 +3,7 @@ all: arbitro cliente jogo
 
 arbitro:
 	gcc -c arbitro.c
-	gcc structs.h arbitro.c -o arbitro
+	gcc structs.h arbitro.c -o arbitro -lpthread
 	
 cliente:
 	gcc -c cliente.c
@@ -11,7 +11,7 @@ cliente:
 
 jogo:
 	gcc -c G_004.c
-	gcc  G_004.c -o jogo	
+	gcc  G_004.c -o G_004	
 
 clean: cleana cleanc cleanj
 
@@ -24,9 +24,8 @@ cleanc:
 	rm cliente.o 
 	
 cleanj:
-	rm jogo
 	rm G_004.o
-																			
+																	
 install:
-	cp jogo Jogo
-	rm jogo
+	cp G_004 Jogo
+	rm G_004
