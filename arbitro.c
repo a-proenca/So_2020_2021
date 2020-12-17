@@ -64,9 +64,11 @@ void *trata_logins()
 				a.nclientes++; //vou adicionar um cliente
 				if (a.clientes[a.nclientes - 1].atendido != 1)
 				{
-					sprintf(fifo_name, SERV_PIPE_WR, a.clientes[a.nclientes - 1].pid);
 					a.clientes[a.nclientes - 1].atendido = 1;
-					strcpy(a.clientes[a.nclientes - 1].nome_pipe_escrita, fifo_name);
+					//GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE ESCRITURA
+					//sprintf(fifo_name, SERV_PIPE_WR, a.clientes[a.nclientes - 1].pid);
+					//strcpy(a.clientes[a.nclientes - 1].nome_pipe_escrita, fifo_name);
+					
 					fd_client = open(a.clientes[a.nclientes - 1].nome_pipe_escrita, O_WRONLY);
 					printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes - 1].nome);
 
@@ -75,7 +77,7 @@ void *trata_logins()
 					{
 						printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
 					}
-					close(fd_client);
+					//close(fd_client);
 				}
 			}
 			else
@@ -157,23 +159,28 @@ void *jogo(void *dados)
 
 		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
 		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
-						 //while(1){
+		//Ler a informacao inicial do jogo
 		bytes = read(pipe2[0], resp, sizeof(resp));
 		if (bytes == -1)
 		{
 			fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
 			//exit(0);
 		}
-
 		resp[bytes] = '\0';
+		//vou enviar a informacao que li do jogo para o cliente
+		//fprintf(stdout, "%s\t", resp);
+		write(a.clientes[0].nome_pipe_escrita, resp, strlen(resp));
+		
+		//vou ler a informacao enviada pelo cliente
+		read(a.clientes[0].nome_pipe_leitura, resp, sizeof(resp));
+		strcat(resp,"\n");
+		//enviar a informacao lida para o jogo
 
-		fprintf(stdout, "%s\t", resp);
-
-		strcpy(input, "1");
+		//strcpy(input, "1");
 		//fprintf(stdin,"%d",input);
 		//scanf("%d",&input);
-		strcat(input, "\n");
-		bytes = write(pipe1[1], &input, strlen(input));
+		//strcat(input, "\n");
+		bytes = write(pipe1[1], &resp, strlen(resp));
 		if (bytes == -1)
 		{
 			fprintf(stderr, "O pipe nao conseguiu escrever informacao.\n");
@@ -216,7 +223,6 @@ void *campeonato(void *dados)
 		sleep(1);
 		dur--;
 	} while (dur > 0 && FLAG_TERMINA == 0);
-	printf("Acabou campeonato\n");
 	for (int i = 0; i < a.n_jogos; i++)
 	{
 		kill(a.jogos[i].pid_jogo, SIGUSR1);

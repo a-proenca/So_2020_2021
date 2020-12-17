@@ -7,7 +7,7 @@ arbitro:
 	
 cliente:
 	gcc -c cliente.c
-	gcc structs.h cliente.c -o cliente	
+	gcc structs.h cliente.c -o cliente -lpthread
 
 jogo:
 	gcc -c G_004.c

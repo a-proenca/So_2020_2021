@@ -35,6 +35,31 @@ void interrupcao_ar()
   exit(EXIT_FAILURE);
 }
 
+//Vou escrever para o arbitro no pipe -> SERV_PIPE_WR
+//Vou ler do servidor pelo CLIENT_PIPE
+void* joga_cliente(void* dados){
+  int fd_cliente;
+  int fd_servidor;
+  char resp[256];
+  int bytes;
+  char msg[256];
+
+  //ler a informacao inicial do jogo enviada pelo arbitro 
+  fd_cliente = open(SERV_PIPE_WR, O_RDONLY);
+  bytes = read(fd_cliente,resp, sizeof(resp));
+  if (bytes == -1)
+	{
+		fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
+	}
+
+  //enviar a info ao arbitro
+  fd_servidor = open(CLIENT_PIPE, O_WRONLY);
+  bytes = write(fd_servidor,msg,sizeof(msg));
+  if (bytes == -1)
+	{
+		fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
+	}
+}
 int main(int argc, char argv[])
 {
   int fd_cli;
@@ -65,9 +90,19 @@ int main(int argc, char argv[])
     printf("[Erro]Nao existe nenhum servidor ativo.\n");
     exit(EXIT_FAILURE);
   }
+
   sprintf(fifo_name_serv, SERV_PIPE_WR, getpid());
   sprintf(fifo_name, CLIENT_PIPE, getpid());
+  //GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE ESCRITA(ARB->CLI)
+  strcpy(c.nome_pipe_escrita,fifo_name_serv);
+  //GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE LEITURA(ARB <- CLI)
+  strcpy(c.nome_pipe_leitura,fifo_name);
 
+  if (access(fifo_name, F_OK) == 0)
+  { /// verifica se o pipe ja esta aberto
+    printf("\n[ERRO] Cliente ja existe.\n");
+    exit(EXIT_FAILURE);
+  }
   if (access(fifo_name_serv, F_OK) == 0)
   { // verifica se o pipe ja esta aberto
     printf("\n[ERRO] Cliente ja existe.\n");
@@ -75,6 +110,11 @@ int main(int argc, char argv[])
   }
 
   if (mkfifo(fifo_name_serv, 0600) == -1)
+  {
+    printf("\n[ERRO] Erro ao criar o pipe do cliente (mkfifo)");
+    exit(EXIT_FAILURE);
+  }
+  if (mkfifo(fifo_name, 0600) == -1)
   {
     printf("\n[ERRO] Erro ao criar o pipe do cliente (mkfifo)");
     exit(EXIT_FAILURE);
@@ -115,6 +155,11 @@ int main(int argc, char argv[])
   }
 
   close(fd_cli);
+
+  pthread_t *thread_cliente; //Thread que gera o campeonato
+	thread_cliente = (pthread_t *)malloc(sizeof(pthread_t));
+
+	pthread_create(thread_cliente, NULL, (void *)joga_cliente, NULL);
 
   while (c.sair != 1)
   {
