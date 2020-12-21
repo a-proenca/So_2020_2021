@@ -34,49 +34,12 @@ void interrupcao_ar()
   unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
 }
-int fd_cli;
 //Vou escrever para o arbitro no pipe -> SERV_PIPE_WR
 //Vou ler do servidor pelo CLIENT_PIPE
-void *joga_cliente(void *dados)
-{
-  int fd_cliente;
-  int fd_servidor;
-  char resp[500];
-  int bytes;
-  char msg[500];
 
-  setbuf(stdout, NULL);
-  //ler a informacao inicial do jogo enviada pelo arbitro
-  fd_cliente = open(c.nome_pipe_escrita, O_RDONLY);
-  //sleep(20);
-  bytes = read(fd_cliente, &resp, sizeof(resp));
-  if (bytes == -1)
-  {
-    fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
-  }
-
-  printf("Jogo: %d %s\n", bytes, resp);
-  int num;
-  printf("Introduza: ");
-  //scanf(" %d\n", &num);
-  fflush(stdout);
-  fgets(msg, 500, stdin);
-  //strcat(msg,"\0");
-
-  printf("OLA\n");
-  //enviar a info ao arbitro
-  fd_servidor = open(c.nome_pipe_leitura, O_WRONLY);
-  printf("OLA\n");
-
-  bytes = write(fd_servidor, msg, sizeof(msg));
-  if (bytes == -1)
-  {
-    fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
-  }
-}
 int main(int argc, char argv[])
 {
-  //int fd_cli;
+  int fd_cli;
   char mensagem_serv[100];
   int bytes;
   char instrucao[TAM];
@@ -173,15 +136,9 @@ int main(int argc, char argv[])
   }
 
   close(fd_cli);
-  /*
-  if (c.sair == 0)
-  {
-    pthread_t *thread_cliente; //Thread que gera o campeonato
-    thread_cliente = (pthread_t *)malloc(sizeof(pthread_t));
-    pthread_create(thread_cliente, NULL, (void *)joga_cliente, NULL);
-  }
-  */
+
   fd_cli = open(fifo_name_serv, O_RDONLY);
+  fd_servidor = open(c.nome_pipe_leitura, O_WRONLY);
 
   fd_set fontes;
   while (c.sair != 1)

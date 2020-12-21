@@ -64,24 +64,23 @@ int main(int argc, char *argv[])
         if (numero != 0)
         {
             r = rand() % 3 + 1;
-            printf("\nO seu adversario jogou o objeto correspondente ao numero %d", r);
             ganha = verifica(numero, r);
             if (ganha == 1)
             {
                 PONTUACAO += 3; //Recebe 3 pontos por vitoria
                 ronda++;
-                printf("\nRonda %d Você ganhou!", ronda);
+                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você ganhou!",r, ronda);
             }
             if (ganha == 2)
             {
                 ronda++;
-                printf("\nRonda %d Você perdeu!", ronda);
+                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você perdeu!",r,ronda);
             }
             if (ganha == 0)
             {
                 ronda++;
                 PONTUACAO += 1;
-                printf("\nRonda %d Empatada", ronda); //Recebe 1 ponto por empate
+                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Empatada",r, ronda); //Recebe 1 ponto por empate
             }
         }
     } while (flag_termina == 0) ;
