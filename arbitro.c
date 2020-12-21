@@ -77,7 +77,7 @@ void *trata_logins()
 					{
 						printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
 					}
-					//close(fd_client);
+					close(fd_client);
 				}
 			}
 			else
@@ -131,12 +131,13 @@ void *jogo(void *dados)
 	int bytes;
 	int filho;
 	res = fork();
-	char resp[1000];
+	char resp[500];
+	char resp1[500];
 	char input[20];
 	int tamanho = 50;
 	int status;
 	int pont_exit;
-
+	char fifo_name[50];
 	if (res == -1)
 	{
 		printf("Fork falhou.\n");
@@ -156,30 +157,37 @@ void *jogo(void *dados)
 	else
 	{
 		//Processo Pai
-
+		
 		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
 		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
+		sprintf(fifo_name, SERV_PIPE_WR, a.clientes[0].pid);
+		int fd_pipe_escrita = open(fifo_name,O_WRONLY);
+		fprintf(stdout,"O jogador %s vai jogar\n",a.clientes[0].nome);
 		//Ler a informacao inicial do jogo
 		bytes = read(pipe2[0], resp, sizeof(resp));
 		if (bytes == -1)
 		{
 			fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
-			//exit(0);
 		}
-		resp[bytes] = '\0';
-		//vou enviar a informacao que li do jogo para o cliente
-		//fprintf(stdout, "%s\t", resp);
-		write(a.clientes[0].nome_pipe_escrita, resp, strlen(resp));
-		
-		//vou ler a informacao enviada pelo cliente
-		read(a.clientes[0].nome_pipe_leitura, resp, sizeof(resp));
-		strcat(resp,"\n");
-		//enviar a informacao lida para o jogo
+		//ler o printf seguinte do jogo
+		bytes = read(pipe2[0], resp1, sizeof(resp1));
+		if (bytes == -1)
+		{
+			fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
+		}
+		//juntar a info para enviar pelo pipe
+		strcat(resp,resp1);
 
-		//strcpy(input, "1");
-		//fprintf(stdin,"%d",input);
-		//scanf("%d",&input);
-		//strcat(input, "\n");
+		//vou enviar a informacao que li do jogo para o cliente
+		fprintf(stdout, "%s\t", resp);
+		write(fd_pipe_escrita, resp, strlen(resp));
+	
+		int fd_pipe_leitura = open(a.clientes[0].nome_pipe_leitura, O_RDONLY);
+		//vou ler a informacao enviada pelo cliente
+		read(fd_pipe_leitura, &resp, sizeof(resp));
+		strcat(resp,"\n");
+		fprintf(stdout,"NUMERO:%s",resp);
+		//enviar a informacao lida para o jogo
 		bytes = write(pipe1[1], &resp, strlen(resp));
 		if (bytes == -1)
 		{
