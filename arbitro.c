@@ -6,6 +6,7 @@ int espera;
 Arbitro a;
 
 int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
+int TERMINA_CAMPEONATO = 0;
 
 void interrupcao()
 {
@@ -68,7 +69,7 @@ void *trata_logins()
 					//GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE ESCRITURA
 					//sprintf(fifo_name, SERV_PIPE_WR, a.clientes[a.nclientes - 1].pid);
 					//strcpy(a.clientes[a.nclientes - 1].nome_pipe_escrita, fifo_name);
-					
+
 					fd_client = open(a.clientes[a.nclientes - 1].nome_pipe_escrita, O_WRONLY);
 					printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes - 1].nome);
 
@@ -157,43 +158,51 @@ void *jogo(void *dados)
 	else
 	{
 		//Processo Pai
-		
+
 		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
 		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
 		sprintf(fifo_name, SERV_PIPE_WR, a.clientes[0].pid);
-		int fd_pipe_escrita = open(fifo_name,O_WRONLY);
-		fprintf(stdout,"O jogador %s vai jogar\n",a.clientes[0].nome);
-		//Ler a informacao inicial do jogo
-		bytes = read(pipe2[0], resp, sizeof(resp));
-		if (bytes == -1)
-		{
-			fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
-		}
-		//ler o printf seguinte do jogo
-		bytes = read(pipe2[0], resp1, sizeof(resp1));
-		if (bytes == -1)
-		{
-			fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
-		}
-		//juntar a info para enviar pelo pipe
-		strcat(resp,resp1);
+		int fd_pipe_escrita = open(fifo_name, O_WRONLY);
+		fprintf(stdout, "O jogador %s vai jogar\n", a.clientes[0].nome);
 
-		//vou enviar a informacao que li do jogo para o cliente
-		fprintf(stdout, "%s\t", resp);
-		write(fd_pipe_escrita, resp, strlen(resp));
-	
-		int fd_pipe_leitura = open(a.clientes[0].nome_pipe_leitura, O_RDONLY);
-		//vou ler a informacao enviada pelo cliente
-		read(fd_pipe_leitura, &resp, sizeof(resp));
-		strcat(resp,"\n");
-		fprintf(stdout,"NUMERO:%s",resp);
-		//enviar a informacao lida para o jogo
-		bytes = write(pipe1[1], &resp, strlen(resp));
-		if (bytes == -1)
+		do
 		{
-			fprintf(stderr, "O pipe nao conseguiu escrever informacao.\n");
-			exit(0);
-		}
+			if(TERMINA_CAMPEONATO == 1){
+				pthread_exit(NULL);
+			}
+			//Ler a informacao inicial do jogo
+			bytes = read(pipe2[0], resp, sizeof(resp));
+			if (bytes == -1)
+			{
+				fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
+			}
+			//ler o printf seguinte do jogo
+			bytes = read(pipe2[0], resp1, sizeof(resp1));
+			if (bytes == -1)
+			{
+				fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
+			}
+
+			//juntar a info para enviar pelo pipe
+			strcat(resp, resp1);
+
+			//vou enviar a informacao que li do jogo para o cliente
+			//fprintf(stdout, "%s\t", resp);
+			write(fd_pipe_escrita, resp, strlen(resp));
+
+			int fd_pipe_leitura = open(a.clientes[0].nome_pipe_leitura, O_RDONLY);
+			//vou ler a informacao enviada pelo cliente
+			read(fd_pipe_leitura, &resp, sizeof(resp));
+			strcat(resp, "\n");
+			//fprintf(stdout, "NUMERO:%s", resp);
+			//enviar a informacao lida para o jogo
+			bytes = write(pipe1[1], &resp, strlen(resp));
+			if (bytes == -1)
+			{
+				fprintf(stderr, "O pipe nao conseguiu escrever informacao.\n");
+				exit(0);
+			}
+		} while (a.clientes[0].sair == 0);
 	}
 	if (waitpid(res, &status, 0) == -1)
 	{
@@ -231,6 +240,7 @@ void *campeonato(void *dados)
 		sleep(1);
 		dur--;
 	} while (dur > 0 && FLAG_TERMINA == 0);
+	TERMINA_CAMPEONATO = 1;
 	for (int i = 0; i < a.n_jogos; i++)
 	{
 		kill(a.jogos[i].pid_jogo, SIGUSR1);

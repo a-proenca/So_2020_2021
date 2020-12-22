@@ -44,7 +44,7 @@ int main(int argc, char argv[])
   int bytes;
   char instrucao[TAM];
   int fd_servidor;
-  char resp[500];
+  //char resp[500];
   char msg[500]="";
 
   setbuf(stdout, NULL);
@@ -137,13 +137,15 @@ int main(int argc, char argv[])
 
   close(fd_cli);
 
-  fd_cli = open(fifo_name_serv, O_RDONLY);
-  fd_servidor = open(c.nome_pipe_leitura, O_WRONLY);
-
+  fd_cli = open(fifo_name_serv, O_RDONLY | O_NONBLOCK);
+  printf("AAAA 1\n");
+  
+  printf("AAAA 2\n");
   fd_set fontes;
   while (c.sair != 1)
   {
-
+    fflush(stdout);
+    printf(">>");
     fflush(stdout);
     FD_ZERO(&fontes);
     FD_SET(0, &fontes);      //preparar para receber do teclado
@@ -171,6 +173,8 @@ int main(int argc, char argv[])
     }
     else if (res > 0 && FD_ISSET(fd_cli, &fontes))
     { //se receber algo do pipe
+      char resp[500];
+      memset(resp,0,sizeof(resp));
       bytes = read(fd_cli, &resp, sizeof(resp));
       if (bytes == -1)
       {
@@ -183,12 +187,13 @@ int main(int argc, char argv[])
       msg[strlen(msg)] = '\0';
 
       //enviar a info ao arbitro
-
+      fd_servidor = open(c.nome_pipe_leitura, O_WRONLY) ;
       bytes = write(fd_servidor, msg, sizeof(msg));
       if (bytes == -1)
       {
         fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
       }
+      close(fd_servidor);
     }
   }
   //mandar ao servidor para dar quit!
