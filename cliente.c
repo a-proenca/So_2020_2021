@@ -4,6 +4,7 @@
 Cliente c;
 int servpid;
 int fd_serv;
+int fd_cli;
 char fifo_name[50];
 char fifo_name_serv[50];
 
@@ -34,17 +35,54 @@ void interrupcao_ar()
   unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
 }
+
+int identificacao(){
+  char mensagem_serv[50];
+  int bytes;
+
+  fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
+  c.pontuacao = 0;
+  c.atendido = 0;
+  c.pid = getpid();
+  strcpy(c.nome_jogo, "");
+  c.sair = 0;
+
+  printf("\nIndique o seu nome:");
+  scanf("%s", c.nome);
+  bytes = write(fd_serv, &c, sizeof(Cliente));
+  if (bytes == 0)
+  {
+    printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
+  }
+
+  fd_cli = open(fifo_name_serv, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
+  bytes = read(fd_cli, &mensagem_serv, sizeof(mensagem_serv));
+  if (bytes == 0)
+  {
+    printf("[Erro]Nao conseguiu ler nada do pipe.\n");
+  }
+  printf("servidor: %s\n", mensagem_serv);
+
+  if (strcasecmp(mensagem_serv, "Bem-vindo Cliente!") != 0)
+  {
+    c.sair = 1;
+    close(fd_cli);
+    unlink(fifo_name_serv);
+    unlink(fifo_name);
+    return 0;
+  }
+
+  close(fd_cli);
+  return 1;
+}
 //Vou escrever para o arbitro no pipe -> SERV_PIPE_WR
 //Vou ler do servidor pelo CLIENT_PIPE
 
 int main(int argc, char argv[])
 {
-  int fd_cli;
-  char mensagem_serv[100];
   int bytes;
   char instrucao[TAM];
   int fd_servidor;
-  //char resp[500];
   char msg[500]="";
 
   setbuf(stdout, NULL);
@@ -107,40 +145,10 @@ int main(int argc, char argv[])
     exit(EXIT_FAILURE);
   }
 
-  fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
-  c.pontuacao = 0;
-  c.atendido = 0;
-  c.pid = getpid();
-  strcpy(c.nome_jogo, "");
-  c.sair = 0;
-
-  printf("\nIndique o seu nome:");
-  scanf("%s", c.nome);
-  bytes = write(fd_serv, &c, sizeof(Cliente));
-  if (bytes == 0)
-  {
-    printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
-  }
-
-  fd_cli = open(fifo_name_serv, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
-  bytes = read(fd_cli, &mensagem_serv, sizeof(mensagem_serv));
-  if (bytes == 0)
-  {
-    printf("[Erro]Nao conseguiu ler nada do pipe.\n");
-  }
-  printf("servidor: %s\n", mensagem_serv);
-
-  if (strcasecmp(mensagem_serv, "Bem-vindo Cliente!") != 0)
-  {
-    c.sair = 1;
-  }
-
-  close(fd_cli);
+  if(identificacao() == 0)
+    return 0;
 
   fd_cli = open(fifo_name_serv, O_RDONLY | O_NONBLOCK);
-  printf("AAAA 1\n");
-  
-  printf("AAAA 2\n");
   fd_set fontes;
   while (c.sair != 1)
   {
@@ -204,5 +212,6 @@ int main(int argc, char argv[])
   }
   close(fd_cli);
   unlink(fifo_name_serv);
+  unlink(fifo_name);
   return 0;
 }
