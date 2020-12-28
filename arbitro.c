@@ -139,6 +139,7 @@ void *jogo(void *dados)
 	int status;
 	int pont_exit;
 	char fifo_name[50];
+	int fd_pipe_leitura, fd_pipe_escrita;
 	if (res == -1)
 	{
 		printf("Fork falhou.\n");
@@ -162,7 +163,7 @@ void *jogo(void *dados)
 		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
 		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
 		sprintf(fifo_name, SERV_PIPE_WR, a.clientes[0].pid);
-		int fd_pipe_escrita = open(fifo_name, O_WRONLY);
+		fd_pipe_escrita = open(fifo_name, O_WRONLY);
 		fprintf(stdout, "O jogador %s vai jogar\n", a.clientes[0].nome);
 
 		do
@@ -190,7 +191,7 @@ void *jogo(void *dados)
 			//fprintf(stdout, "%s\t", resp);
 			write(fd_pipe_escrita, resp, strlen(resp));
 
-			int fd_pipe_leitura = open(a.clientes[0].nome_pipe_leitura, O_RDONLY);
+			fd_pipe_leitura = open(a.clientes[0].nome_pipe_leitura, O_RDONLY);
 			//vou ler a informacao enviada pelo cliente
 			read(fd_pipe_leitura, &resp, sizeof(resp));
 			strcat(resp, "\n");
@@ -214,6 +215,12 @@ void *jogo(void *dados)
 	{
 		pont_exit = WEXITSTATUS(status);
 		printf("A PONTUACAO FINAL FOI: %d\n", pont_exit);
+		a.clientes[0].pontuacao = pont_exit;
+		
+		snprintf(resp, sizeof(resp),"A pontuacao e %d",pont_exit);	
+		write(fd_pipe_escrita, resp, strlen(resp));
+		close(fd_pipe_leitura);
+		close(fd_pipe_escrita);
 	}
 }
 
@@ -221,6 +228,7 @@ void *jogo(void *dados)
 void *campeonato(void *dados)
 {
 	int dur = duracao, esp = espera;
+	TERMINA_CAMPEONATO = 0;
 	do
 	{
 		while (a.nclientes < 2 && FLAG_TERMINA == 0)
@@ -239,7 +247,7 @@ void *campeonato(void *dados)
 	{
 		sleep(1);
 		dur--;
-	} while (dur > 0 && FLAG_TERMINA == 0);
+	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0);
 	TERMINA_CAMPEONATO = 1;
 	for (int i = 0; i < a.n_jogos; i++)
 	{
@@ -342,7 +350,7 @@ int main(int argc, char *argv[])
 	do
 	{
 		fflush(stdout);
-		printf("\nIndroduza o comando: ");
+		printf(">>");
 		fflush(stdout);
 		fgets(comando, TAM, stdin);
 		comando[strlen(comando) - 1] = '\0';
@@ -407,8 +415,7 @@ int main(int argc, char *argv[])
 		}
 		else if (strcasecmp(comando, "end") == 0)
 		{
-			//falta implementar
-			printf("O comando inserido foi %s\n", comando);
+			TERMINA_CAMPEONATO = 1;
 		}
 		else if (strcasecmp(comando, "exit") == 0)
 		{

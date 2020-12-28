@@ -188,7 +188,10 @@ int main(int argc, char argv[])
       {
         fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
       }
-
+      //IF RESP FOR UM NUMERO
+      //c.pontuacao=atoi(resp)
+      //PONTUACAO
+      //ELSE
       printf("Jogo: %d %s\n", bytes, resp);
       fflush(stdin);
       scanf("%s",msg);
