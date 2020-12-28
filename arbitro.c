@@ -168,7 +168,9 @@ void *jogo(void *dados)
 
 		do
 		{
-			if(TERMINA_CAMPEONATO == 1){
+			
+			if (TERMINA_CAMPEONATO == 1)
+			{
 				pthread_exit(NULL);
 			}
 			//Ler a informacao inicial do jogo
@@ -183,16 +185,18 @@ void *jogo(void *dados)
 			{
 				fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
 			}
-
 			//juntar a info para enviar pelo pipe
 			strcat(resp, resp1);
 
 			//vou enviar a informacao que li do jogo para o cliente
 			//fprintf(stdout, "%s\t", resp);
+			while(a.clientes[0].suspenso == 1)
+				sleep(1);
 			write(fd_pipe_escrita, resp, strlen(resp));
-
 			fd_pipe_leitura = open(a.clientes[0].nome_pipe_leitura, O_RDONLY);
 			//vou ler a informacao enviada pelo cliente
+			while(a.clientes[0].suspenso == 1)
+				sleep(1);
 			read(fd_pipe_leitura, &resp, sizeof(resp));
 			strcat(resp, "\n");
 			//fprintf(stdout, "NUMERO:%s", resp);
@@ -216,8 +220,8 @@ void *jogo(void *dados)
 		pont_exit = WEXITSTATUS(status);
 		printf("A PONTUACAO FINAL FOI: %d\n", pont_exit);
 		a.clientes[0].pontuacao = pont_exit;
-		
-		snprintf(resp, sizeof(resp),"A pontuacao e %d",pont_exit);	
+
+		snprintf(resp, sizeof(resp), "A pontuacao e %d", pont_exit);
 		write(fd_pipe_escrita, resp, strlen(resp));
 		close(fd_pipe_leitura);
 		close(fd_pipe_escrita);
@@ -401,17 +405,27 @@ int main(int argc, char *argv[])
 		}
 		else if (comando[0] == 's')
 		{
-			//falta implementar
-			printf("O comando inserido foi %s\n", comando);
 			strcpy(comando, devolve_nome(comando));
-			printf("O nome do jogador e: %s\n", comando);
+			for (int i = 0; i < a.nclientes; i++)
+			{
+				if (strcasecmp(a.clientes[i].nome, comando) == 0)
+				{
+					a.clientes[i].suspenso = 1;
+					printf("O jogador %s foi suspenso.\n",a.clientes[i].nome);
+				}
+			}
 		}
 		else if (comando[0] == 'r')
 		{
-			//falta implementar
-			printf("O comando inserido foi %s\n", comando);
 			strcpy(comando, devolve_nome(comando));
-			printf("O nome do jogador e: %s\n", comando);
+			for (int i = 0; i < a.nclientes; i++)
+			{
+				if (strcasecmp(a.clientes[i].nome, comando) == 0)
+				{
+					a.clientes[i].suspenso = 0;
+					printf("O jogador %s deixou de estar suspenso.\n",a.clientes[i].nome);
+				}
+			}
 		}
 		else if (strcasecmp(comando, "end") == 0)
 		{

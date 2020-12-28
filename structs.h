@@ -25,6 +25,7 @@ typedef struct cliente
     int pontuacao;
     int pid;
     int atendido; 
+    int suspenso;
     char nome[TAM]; //Tem de ser unico
     char nome_pipe_escrita[TAM];
     char nome_pipe_leitura[TAM];

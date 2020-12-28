@@ -43,6 +43,7 @@ int identificacao(){
   fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
   c.pontuacao = 0;
   c.atendido = 0;
+  c.suspenso = 0;
   c.pid = getpid();
   strcpy(c.nome_jogo, "");
   c.sair = 0;
