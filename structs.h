@@ -40,4 +40,6 @@ typedef struct arbitro
     Cliente clientes[TAM]; // vetor de clientes
     int n_jogos;           //nr total de jogos
     Jogo jogos[TAM];       // vetor de jogos
+    int maxplayers;
+    char gamedir[TAM];
 } Arbitro;

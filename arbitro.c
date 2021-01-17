@@ -29,7 +29,18 @@ int verificaNome(char *nome)
 	}
 	return 0;
 }
-
+int contaPessoasNoCampeonato()
+{
+	int conta = 0;
+	for (int i = 0; i < a.nclientes; i++)
+	{
+		if (a.clientes[i].sair == 0)
+		{
+			conta++;
+		}
+	}
+	return conta;
+}
 void guardaJogos()
 {
 	FILE *f;
@@ -143,6 +154,8 @@ void comandosMenu()
 
 void *jogo(void *dados)
 {
+	Cliente *cli;
+	cli = (Cliente*)dados;
 	int pipe1[2];
 	int pipe2[2];
 	if (pipe(pipe1) == -1) //verifica se conseguiu criar o pipe1
@@ -181,7 +194,7 @@ void *jogo(void *dados)
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
 		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2
-		execl("Jogo/G_004", "G_004", NULL);
+		execl("Jogo/G_004", cli->nome_jogo, NULL);
 	}
 	else
 	{
@@ -189,9 +202,9 @@ void *jogo(void *dados)
 
 		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
 		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
-		sprintf(fifo_name, SERV_PIPE_WR, a.clientes[0].pid);
+		sprintf(fifo_name, SERV_PIPE_WR, cli->pid);
 		fd_pipe_escrita = open(fifo_name, O_WRONLY);
-		fprintf(stdout, "O jogador %s vai jogar\n", a.clientes[0].nome);
+		fprintf(stdout, "O jogador %s vai jogar\n", cli->nome);
 
 		do
 		{
@@ -217,12 +230,12 @@ void *jogo(void *dados)
 
 			//vou enviar a informacao que li do jogo para o cliente
 			//fprintf(stdout, "%s\t", resp);
-			while (a.clientes[0].suspenso == 1)
+			while (cli->suspenso == 1)
 				sleep(1);
 			write(fd_pipe_escrita, resp, strlen(resp));
-			fd_pipe_leitura = open(a.clientes[0].nome_pipe_leitura, O_RDONLY);
+			fd_pipe_leitura = open(cli->nome_pipe_leitura, O_RDONLY);
 			//vou ler a informacao enviada pelo cliente
-			while (a.clientes[0].suspenso == 1)
+			while (cli->suspenso== 1)
 				sleep(1);
 			read(fd_pipe_leitura, &resp, sizeof(resp));
 			strcat(resp, "\n");
@@ -234,7 +247,7 @@ void *jogo(void *dados)
 				fprintf(stderr, "O pipe nao conseguiu escrever informacao.\n");
 				exit(0);
 			}
-		} while (a.clientes[0].sair == 0);
+		} while (cli->sair == 0);
 	}
 	printf("Sai do ciclo while.\n");
 	if (waitpid(res, &status, 0) == -1)
@@ -247,7 +260,7 @@ void *jogo(void *dados)
 	{
 		pont_exit = WEXITSTATUS(status);
 		printf("A PONTUACAO FINAL FOI: %d\n", pont_exit);
-		a.clientes[0].pontuacao = pont_exit;
+		cli->pontuacao = pont_exit;
 
 		snprintf(resp, sizeof(resp), "A pontuacao e %d", pont_exit);
 		write(fd_pipe_escrita, resp, strlen(resp));
@@ -271,15 +284,38 @@ void *campeonato(void *dados)
 			esp--;
 		} while (esp > 0 && FLAG_TERMINA == 0);
 	} while (a.nclientes < 2 && FLAG_TERMINA == 0);
+
+	int conta_jogadores = 0;
+	int r = 0;
+	int j = 0;
+	//Atribuir jogos a clientes
+	do
+	{
+		r = rand() % a.nclientes;
+		if (strcmp(a.clientes[r].nome_jogo, "") == 0)
+		{
+			conta_jogadores++;
+			j = rand() % a.n_jogos;
+			strcpy(a.clientes[r].nome_jogo, a.jogos[j].identificacao);
+			printf("O jogador %s vai jogar o jogo %s\n", a.clientes[r].nome, a.jogos[j].identificacao);
+		}
+	} while (conta_jogadores < a.maxplayers && conta_jogadores < a.nclientes);
+
 	printf("Comecou campeonato\n");
 	pthread_t *thread_jogo; //Thread que inicia o jogo
-	thread_jogo = (pthread_t *)malloc(sizeof(pthread_t));
-	pthread_create(thread_jogo, NULL, (void *)jogo, NULL);
+	thread_jogo = (pthread_t *)malloc(sizeof(pthread_t) * conta_jogadores);
+	for (int i = 0; i < a.nclientes; i++)
+	{
+		if(strcmp(a.clientes[i].nome_jogo,"") != 0){ //Se tiver um jogo associado
+			pthread_create(thread_jogo, NULL, (void *)jogo, (void*)&a.clientes[i]);
+		}
+	}
+
 	do
 	{
 		sleep(1);
 		dur--;
-	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0);
+	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0); //&& contaPessoasNoCampeonato() > 1  ->ACRESCENTAR
 	TERMINA_CAMPEONATO = 1;
 
 	for (int i = 0; i < a.nclientes; i++)
@@ -287,10 +323,10 @@ void *campeonato(void *dados)
 		printf("A pontuacao de %s foi de %d\n", a.clientes[i].nome, a.clientes[i].pontuacao);
 		a.clientes[i].sair = 1;
 	}
-	for (int i = 0; i < a.n_jogos; i++)
+	/*for (int i = 0; i < a.n_jogos; i++)
 	{
 		kill(a.jogos[i].pid_jogo, SIGUSR1);
-	}
+	}*/
 
 	for (int i = 0; i < a.nclientes; i++)
 	{
@@ -315,8 +351,8 @@ char *devolve_nome(char comando[TAM])
 
 int main(int argc, char *argv[])
 {
-	char gamedir[TAM] = GAMEDIR;
-	int maxplayers = MAXPLAYER;
+	strcpy(a.gamedir, GAMEDIR);
+	a.maxplayers = MAXPLAYER;
 	a.nclientes = 0;
 	a.n_jogos = 0;
 	char comando[TAM];
@@ -367,11 +403,11 @@ int main(int argc, char *argv[])
 	}
 
 	if (getenv("GAMEDIR") != NULL)
-		strcpy(gamedir, getenv("GAMEDIR"));
+		strcpy(a.gamedir, getenv("GAMEDIR"));
 	if (getenv("MAXPLAYER") != NULL)
-		maxplayers = atoi(getenv("MAXPLAYER"));
+		a.maxplayers = atoi(getenv("MAXPLAYER"));
 
-	printf("gamedir = %s;maxplayers = %d\n", gamedir, maxplayers);
+	printf("gamedir = %s;maxplayers = %d\n", a.gamedir, a.maxplayers);
 
 	guardaJogos();
 	pthread_t *logins;
