@@ -249,7 +249,7 @@ void *jogo(void *dados)
 			}
 		} while (cli->sair == 0);
 	}
-	printf("Sai do ciclo while.\n");
+	printf("Cheguei AQUI.\n");
 	if (waitpid(res, &status, 0) == -1)
 	{
 		perror("waitpid falhou!");
@@ -285,7 +285,7 @@ void *campeonato(void *dados)
 		} while (esp > 0 && FLAG_TERMINA == 0);
 	} while (a.nclientes < 2 && FLAG_TERMINA == 0);
 
-	int conta_jogadores = 0;
+	a.n_jogosAdecorrer = 0;
 	int r = 0;
 	int j = 0;
 	//Atribuir jogos a clientes
@@ -294,20 +294,24 @@ void *campeonato(void *dados)
 		r = rand() % a.nclientes;
 		if (strcmp(a.clientes[r].nome_jogo, "") == 0)
 		{
-			conta_jogadores++;
+			a.n_jogosAdecorrer++;
 			j = rand() % a.n_jogos;
 			strcpy(a.clientes[r].nome_jogo, a.jogos[j].identificacao);
 			printf("O jogador %s vai jogar o jogo %s\n", a.clientes[r].nome, a.jogos[j].identificacao);
 		}
-	} while (conta_jogadores < a.maxplayers && conta_jogadores < a.nclientes);
+	} while (a.n_jogosAdecorrer < a.maxplayers && a.n_jogosAdecorrer < a.nclientes);
 
 	printf("Comecou campeonato\n");
-	pthread_t *thread_jogo; //Thread que inicia o jogo
-	thread_jogo = (pthread_t *)malloc(sizeof(pthread_t) * conta_jogadores);
-	for (int i = 0; i < a.nclientes; i++)
+	//pthread_t *thread_jogo; //Thread que inicia o jogo
+	int k = 0;
+	for (int i = 0,k= 0; i < a.nclientes; i++)
 	{
 		if(strcmp(a.clientes[i].nome_jogo,"") != 0){ //Se tiver um jogo associado
-			pthread_create(thread_jogo, NULL, (void *)jogo, (void*)&a.clientes[i]);
+			strcpy(a.jogosAdecorrer[k].nomejogo,a.clientes[i].nome_jogo);
+			strcpy(a.jogosAdecorrer[k].nomecliente,a.clientes[i].nome);
+			//a.jogosAdecorrer[k].thread = (pthread_t *)malloc(sizeof(pthread_t));
+			pthread_create(&a.jogosAdecorrer[k].thread, NULL,jogo, (void*)&a.clientes[i]);
+			k++;
 		}
 	}
 
@@ -315,7 +319,7 @@ void *campeonato(void *dados)
 	{
 		sleep(1);
 		dur--;
-	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0); //&& contaPessoasNoCampeonato() > 1  ->ACRESCENTAR
+	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0 && contaPessoasNoCampeonato() > 1);
 	TERMINA_CAMPEONATO = 1;
 
 	for (int i = 0; i < a.nclientes; i++)
@@ -323,6 +327,11 @@ void *campeonato(void *dados)
 		printf("A pontuacao de %s foi de %d\n", a.clientes[i].nome, a.clientes[i].pontuacao);
 		a.clientes[i].sair = 1;
 	}
+	
+	for(int i = 0; i < a.n_jogosAdecorrer; i++){
+		pthread_join(a.jogosAdecorrer[i].thread, NULL);
+	}
+	
 	/*for (int i = 0; i < a.n_jogos; i++)
 	{
 		kill(a.jogos[i].pid_jogo, SIGUSR1);

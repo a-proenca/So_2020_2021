@@ -26,16 +26,14 @@ int main(int argc, char *argv[])
     int numero;
     int r;
     char objeto[50];
-    setbuf(stdout,NULL);
-
-    
+    setbuf(stdout, NULL);
 
     if (signal(SIGUSR1, termina_jogo) == SIG_ERR)
     {
         printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR1\n");
         exit(EXIT_FAILURE);
     }
-    
+
     srand(time(NULL));
 
     printf("\n---------------------BEM VINDO AO JOGO------------"
@@ -45,23 +43,19 @@ int main(int argc, char *argv[])
            "\nPedra ganha Tesoura"
            "\nTesoura ganha Papel"
            "\nPapel ganha Pedra");
-    
-   
+
     do
     {
-        do
-        {
-            printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
-            scanf("%s", objeto);
-            
-            /*if (numero2 == 0)
+
+        printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
+        scanf("%s", objeto);
+
+        /*if (numero2 == 0)
             { //Se o cliente puser #quit o arbitro manda 0
                 flag_termina = 1;
             }*/
-            numero = atoi(objeto);
-
-        } while (numero < 0 || numero > 3);
-        if (numero != 0)
+        numero = atoi(objeto);
+        if (numero > 0 && numero < 4)
         {
             r = rand() % 3 + 1;
             ganha = verifica(numero, r);
@@ -69,23 +63,26 @@ int main(int argc, char *argv[])
             {
                 PONTUACAO += 3; //Recebe 3 pontos por vitoria
                 ronda++;
-                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você ganhou!",r, ronda);
+                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você ganhou!", r, ronda);
             }
             if (ganha == 2)
             {
                 ronda++;
-                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você perdeu!",r,ronda);
+                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você perdeu!", r, ronda);
             }
             if (ganha == 0)
             {
                 ronda++;
                 PONTUACAO += 1;
-                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Empatada",r, ronda); //Recebe 1 ponto por empate
+                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Empatada", r, ronda); //Recebe 1 ponto por empate
             }
         }
-    } while (flag_termina == 0) ;
+        else
+        {
+            printf("\nNumero Invalido.");
+        }
+    } while (flag_termina == 0);
 
-    
     //itoa(PONTUACAO,pontuacao2,10);
     printf("PONT = %d", PONTUACAO);
 

@@ -19,6 +19,13 @@ typedef struct jogo
     int pid_jogo;
 } Jogo;
 
+typedef struct jogosAdecorrer
+{
+    pthread_t thread;
+    char nomejogo[TAM];
+    char nomecliente[TAM];
+}JogosAdecorrer;
+
 //estrutura cliente
 typedef struct cliente
 {
@@ -42,4 +49,7 @@ typedef struct arbitro
     Jogo jogos[TAM];       // vetor de jogos
     int maxplayers;
     char gamedir[TAM];
+    JogosAdecorrer jogosAdecorrer[TAM]; //vetor de jogos a decorrer
+    int n_jogosAdecorrer;
 } Arbitro;
+
