@@ -155,7 +155,7 @@ void comandosMenu()
 void *jogo(void *dados)
 {
 	Cliente *cli;
-	cli = (Cliente*)dados;
+	cli = (Cliente *)dados;
 	int pipe1[2];
 	int pipe2[2];
 	if (pipe(pipe1) == -1) //verifica se conseguiu criar o pipe1
@@ -206,6 +206,8 @@ void *jogo(void *dados)
 		fd_pipe_escrita = open(fifo_name, O_WRONLY);
 		fprintf(stdout, "O jogador %s vai jogar\n", cli->nome);
 
+		fd_set fontes;
+		struct timeval t;
 		do
 		{
 
@@ -235,18 +237,54 @@ void *jogo(void *dados)
 			write(fd_pipe_escrita, resp, strlen(resp));
 			fd_pipe_leitura = open(cli->nome_pipe_leitura, O_RDONLY);
 			//vou ler a informacao enviada pelo cliente
-			while (cli->suspenso== 1)
+			while (cli->suspenso == 1)
 				sleep(1);
-			read(fd_pipe_leitura, &resp, sizeof(resp));
-			strcat(resp, "\n");
-			//fprintf(stdout, "NUMERO:%s", resp);
-			//enviar a informacao lida para o jogo
-			bytes = write(pipe1[1], &resp, strlen(resp));
-			if (bytes == -1)
+
+			int res;
+			do
 			{
-				fprintf(stderr, "O pipe nao conseguiu escrever informacao.\n");
-				exit(0);
-			}
+				fflush(stdout);
+				printf(" ");
+				fflush(stdout);
+				FD_ZERO(&fontes);
+				FD_SET(0, &fontes);
+				FD_SET(fd_pipe_leitura, &fontes);
+				t.tv_sec = 1;
+				t.tv_usec = 0;
+
+				res = select(fd_pipe_leitura + 1, &fontes, NULL, NULL, &t);
+				printf("RES = %d\n",res);
+
+
+				if (res == 0 && cli->sair == 1)
+				{ //caso acabe timeout e ele tiver de sair
+				//	NUNCA ENTRA AQUI -> BUG NO TIMEOUT?
+					printf("Acabou o jogo.\n");
+					bytes = write(pipe1[1], "\n", strlen("\n"));
+					break;
+				}
+				else if (res > 0 && FD_ISSET(fd_pipe_leitura, &fontes))
+				{
+					printf("ANTES DO READ.\n");
+					read(fd_pipe_leitura, &resp, sizeof(resp));
+					printf("LEU.\n");
+					strcat(resp, "\n");
+					//fprintf(stdout, "NUMERO:%s", resp);
+					//enviar a informacao lida para o jogo
+					bytes = write(pipe1[1], &resp, strlen(resp));
+					if (bytes == -1)
+					{
+						fprintf(stderr, "O pipe nao conseguiu escrever informacao.\n");
+						exit(0);
+					}
+					break;
+				}
+				else if (res == 0)
+				{
+					printf("TIMEOUT.\n");
+				}
+			} while (1);
+
 		} while (cli->sair == 0);
 	}
 	printf("Cheguei AQUI.\n");
@@ -255,7 +293,7 @@ void *jogo(void *dados)
 		perror("waitpid falhou!");
 		exit(0);
 	}
-
+	//NAO ESTA A CHEGAR AQUI!
 	if (WIFEXITED(status))
 	{
 		pont_exit = WEXITSTATUS(status);
@@ -304,13 +342,14 @@ void *campeonato(void *dados)
 	printf("Comecou campeonato\n");
 	//pthread_t *thread_jogo; //Thread que inicia o jogo
 	int k = 0;
-	for (int i = 0,k= 0; i < a.nclientes; i++)
+	for (int i = 0, k = 0; i < a.nclientes; i++)
 	{
-		if(strcmp(a.clientes[i].nome_jogo,"") != 0){ //Se tiver um jogo associado
-			strcpy(a.jogosAdecorrer[k].nomejogo,a.clientes[i].nome_jogo);
-			strcpy(a.jogosAdecorrer[k].nomecliente,a.clientes[i].nome);
-			//a.jogosAdecorrer[k].thread = (pthread_t *)malloc(sizeof(pthread_t));
-			pthread_create(&a.jogosAdecorrer[k].thread, NULL,jogo, (void*)&a.clientes[i]);
+		if (strcmp(a.clientes[i].nome_jogo, "") != 0)
+		{ //Se tiver um jogo associado
+			strcpy(a.jogosAdecorrer[k].nomejogo, a.clientes[i].nome_jogo);
+			strcpy(a.jogosAdecorrer[k].nomecliente, a.clientes[i].nome);
+			//Quando a 2 thread começa a 1 pára
+			pthread_create(&a.jogosAdecorrer[k].thread, NULL, jogo, (void *)&a.clientes[i]);
 			k++;
 		}
 	}
@@ -327,11 +366,14 @@ void *campeonato(void *dados)
 		printf("A pontuacao de %s foi de %d\n", a.clientes[i].nome, a.clientes[i].pontuacao);
 		a.clientes[i].sair = 1;
 	}
-	
-	for(int i = 0; i < a.n_jogosAdecorrer; i++){
+	sleep(5);
+	/*
+	for (int i = 0; i < a.n_jogosAdecorrer; i++)
+	{
 		pthread_join(a.jogosAdecorrer[i].thread, NULL);
 	}
-	
+	*/
+
 	/*for (int i = 0; i < a.n_jogos; i++)
 	{
 		kill(a.jogos[i].pid_jogo, SIGUSR1);

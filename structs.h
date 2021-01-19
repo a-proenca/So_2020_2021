@@ -7,6 +7,12 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/time.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/select.h>
+#include <sys/stat.h>
 #define TAM 50
 #define SERV_PIPE "pipe_servidor" //Trata de logins (arbitro <- cliente)
 #define SERV_PIPE_WR "server_c%d"  //Trata de info do arbitro -> cliente
