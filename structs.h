@@ -22,7 +22,6 @@
 typedef struct jogo
 {
     char identificacao[TAM]; //Tem de ser unico
-    int pid_jogo;
 } Jogo;
 
 typedef struct jogosAdecorrer
@@ -30,6 +29,7 @@ typedef struct jogosAdecorrer
     pthread_t thread;
     char nomejogo[TAM];
     char nomecliente[TAM];
+    int pid_jogo;
 }JogosAdecorrer;
 
 //estrutura cliente
