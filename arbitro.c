@@ -172,7 +172,6 @@ void *jogo(void *dados)
 	int res;
 	int bytes;
 	int filho;
-	res = fork();
 	char resp[500];
 	char resp1[500];
 	char input[20];
@@ -181,7 +180,10 @@ void *jogo(void *dados)
 	int pont_exit;
 	char fifo_name[50];
 	int fd_pipe_leitura, fd_pipe_escrita;
-	
+	fd_set fontes;
+	struct timeval t;
+
+	res = fork();
 	if (res == -1)
 	{
 		printf("Fork falhou.\n");
@@ -189,11 +191,14 @@ void *jogo(void *dados)
 	}
 	else if (res == 0)
 	{
-		for(int i = 0; i < a.n_jogosAdecorrer;i++){
-			if(strcmp(a.jogosAdecorrer[i].nomejogo, cli->nome_jogo) == 0){
+		for (int i = 0; i < a.n_jogosAdecorrer; i++)
+		{
+			if (strcmp(a.jogosAdecorrer[i].nomejogo, cli->nome_jogo) == 0)
+			{
 				a.jogosAdecorrer[i].pid_jogo = getpid();
 			}
 		}
+
 		// Processo filho
 		//Falta gerar um nr aleatorio para escolher um jogo da diretoria
 		//pipe1 -> write || pipe2 -> read
@@ -201,13 +206,14 @@ void *jogo(void *dados)
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
 		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2
-		if(strcmp(cli->nome_jogo,"G_004")){
+		if (strcmp(cli->nome_jogo, "G_004"))
+		{
 			execl("Jogo/G_004", cli->nome_jogo, NULL);
 		}
 		else
 		{
 			execl("Jogo/G_005", cli->nome_jogo, NULL);
-		}	
+		}
 	}
 	else
 	{
@@ -218,9 +224,6 @@ void *jogo(void *dados)
 		sprintf(fifo_name, SERV_PIPE_WR, cli->pid);
 		fd_pipe_escrita = open(fifo_name, O_WRONLY);
 		fprintf(stdout, "O jogador %s vai jogar\n", cli->nome);
-
-		fd_set fontes;
-		struct timeval t;
 		do
 		{
 
@@ -261,7 +264,7 @@ void *jogo(void *dados)
 				printf(" ");
 				fflush(stdout);
 				FD_ZERO(&fontes);
-				FD_SET(0, &fontes);
+				//FD_SET(0, &fontes);
 				FD_SET(fd_pipe_leitura, &fontes);
 				t.tv_sec = 1;
 				t.tv_usec = 0;
@@ -270,12 +273,15 @@ void *jogo(void *dados)
 				printf("RES = %d\n",sele);
 
 
-				if (sele == 0 && cli->sair == 1)
-				{ //caso acabe timeout e ele tiver de sair
+				if (sele == 0 )
+				{ //caso acabe timeout e ele tiver de sair  && cli->sair == 1
 				//	NUNCA ENTRA AQUI -> BUG NO TIMEOUT?
-					printf("Acabou o jogo. Res = 0\n");
-					//bytes = write(pipe1[1], "\n", strlen("\n"));
-					break;
+					printf("TIMEOUT.\n");
+					if(cli->sair == 1){
+						printf("Acabou o jogo. Res = 0\n");
+						bytes = write(pipe1[1], "\n", strlen("\n"));
+						break;
+					}	
 				}
 				else if (sele > 0 && FD_ISSET(fd_pipe_leitura, &fontes))
 				{
@@ -292,10 +298,6 @@ void *jogo(void *dados)
 						exit(0);
 					}
 					break;
-				}
-				else if (sele == 0)
-				{
-					printf("TIMEOUT.\n");
 				}
 			} while (1);
 
@@ -380,7 +382,6 @@ void *campeonato(void *dados)
 		printf("A pontuacao de %s foi de %d\n", a.clientes[i].nome, a.clientes[i].pontuacao);
 		a.clientes[i].sair = 1;
 	}
-	sleep(5);
 	/*
 	for (int i = 0; i < a.n_jogosAdecorrer; i++)
 	{
@@ -388,16 +389,17 @@ void *campeonato(void *dados)
 	}
 	*/
 
-/*
-	for (int i = 0; i < a.n_jogosAdecorrer; i++)
-	{
-		kill(a.jogosAdecorrer[i].pid_jogo, SIGUSR1);
-	}
-*/
 	for (int i = 0; i < a.nclientes; i++)
 	{
 		kill(a.clientes[i].pid, SIGUSR1);
 	}
+	/*
+
+	for (int i = 0; i < a.n_jogosAdecorrer; i++)
+	{
+		kill(a.jogosAdecorrer[i].pid_jogo, SIGUSR1);
+	}
+	*/
 	printf("Terminou campeonato.\n");
 
 	//free(thread_jogo);
