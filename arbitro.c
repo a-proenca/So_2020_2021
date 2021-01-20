@@ -29,6 +29,7 @@ int verificaNome(char *nome)
 	}
 	return 0;
 }
+//Funcao que conta o numero total de pessoas no campeonato
 int contaPessoasNoCampeonato()
 {
 	int conta = 0;
