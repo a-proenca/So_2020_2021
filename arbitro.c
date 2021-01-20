@@ -237,6 +237,7 @@ void *jogo(void *dados)
 				sleep(1);
 			write(fd_pipe_escrita, resp, strlen(resp));
 			fd_pipe_leitura = open(cli->nome_pipe_leitura, O_RDONLY);
+			printf("Abri o pipe\n");
 			//vou ler a informacao enviada pelo cliente
 			while (cli->suspenso == 1)
 				sleep(1);
@@ -260,8 +261,8 @@ void *jogo(void *dados)
 				if (res == 0 && cli->sair == 1)
 				{ //caso acabe timeout e ele tiver de sair
 				//	NUNCA ENTRA AQUI -> BUG NO TIMEOUT?
-					printf("Acabou o jogo.\n");
-					bytes = write(pipe1[1], "\n", strlen("\n"));
+					printf("Acabou o jogo. Res = 0\n");
+					//bytes = write(pipe1[1], "\n", strlen("\n"));
 					break;
 				}
 				else if (res > 0 && FD_ISSET(fd_pipe_leitura, &fontes))

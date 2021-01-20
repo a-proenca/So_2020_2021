@@ -13,6 +13,8 @@ jogo:
 	/bin/ls Jogo > jogos.txt
 	gcc -c G_004.c
 	gcc  G_004.c -o G_004	
+	gcc -c G_005.c
+	gcc  G_005.c -o G_005
 
 clean: cleana cleanc cleanj
 
@@ -26,8 +28,11 @@ cleanc:
 	
 cleanj:
 	rm G_004.o
+	rm G_005.0
 	rm jogos.txt
 																	
 install:
 	cp G_004 Jogo
+	cp G_005 Jogo
 	rm G_004
+	rm G_005
