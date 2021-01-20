@@ -7,9 +7,10 @@ arbitro:
 	
 cliente:
 	gcc -c cliente.c
-	gcc structs.h cliente.c -o cliente	
+	gcc structs.h cliente.c -o cliente -lpthread
 
 jogo:
+	/bin/ls Jogo > jogos.txt
 	gcc -c G_004.c
 	gcc  G_004.c -o G_004	
 
@@ -25,6 +26,7 @@ cleanc:
 	
 cleanj:
 	rm G_004.o
+	rm jogos.txt
 																	
 install:
 	cp G_004 Jogo
