@@ -15,6 +15,7 @@ int verifica(int p1, int p2);
 void termina_jogo()
 {
     flag_termina = 1;
+    exit(PONTUACAO);
 }
 
 //O JOGO AGORA NAO E POR RONDAS, PARA FACILITAR OS NAMED PIPES
