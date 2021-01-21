@@ -155,7 +155,13 @@ void comandosMenu()
 	printf("Sair (exit)\n");
 	printf("=================================\n");
 }
-int pid;
+
+void mostraPontuacao(){	
+	for(int i=0; i<a.nclientes; i++){
+		printf("Pontuacao do %s - %d pontos\n",a.clientes[i].nome,a.clientes[i].pontuacao);
+	}
+}
+
 void *jogo(void *dados)
 {
 	Cliente *cli;
@@ -190,8 +196,6 @@ void *jogo(void *dados)
 	}
 	else if (res == 0)
 	{
-		pid=getpid();
-		printf("Pf %d\n", pid);
 		// Processo filho
 		//Falta gerar um nr aleatorio para escolher um jogo da diretoria
 		//pipe1 -> write || pipe2 -> read
@@ -210,14 +214,6 @@ void *jogo(void *dados)
 	}
 	else
 	{
-		for (int i = 0; i < a.n_jogosAdecorrer; i++)
-		{
-			if (strcmp(a.jogosAdecorrer[i].nomejogo, cli->nome_jogo) == 0)
-			{
-				a.jogosAdecorrer[i].pid_jogo = pid;
-				printf("Pp %d\n", a.jogosAdecorrer[i].pid_jogo);
-			}
-		}
 		//Processo Pai
 		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
 		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
@@ -253,7 +249,6 @@ void *jogo(void *dados)
 				sleep(1);
 			write(fd_pipe_escrita, resp, strlen(resp));
 			fd_pipe_leitura = open(cli->nome_pipe_leitura, O_RDONLY);
-			printf("Abri o pipe\n");
 			//vou ler a informacao enviada pelo cliente
 			while (cli->suspenso == 1)
 				sleep(1);
@@ -270,15 +265,14 @@ void *jogo(void *dados)
 			}
 		
 		} while (cli->sair == 0);
+		//Envia SIGUSR1 ao jogo
+		kill(res, SIGUSR1);
 	}
-	printf("Cheguei AQUI.\n");
-/*	if (waitpid(res, &status, 0) == -1)
+	if (waitpid(res, &status, 0) == -1)
 	{
 		perror("waitpid falhou!");
 		exit(0);
-	}*/
-	kill(res, SIGUSR1);
-	sleep(1);
+	}
 	if (WIFEXITED(status))
 	{
 		pont_exit = WEXITSTATUS(status);
@@ -352,8 +346,6 @@ void *campeonato(void *dados)
 		int fd_cl=open(a.clientes[i].nome_pipe_leitura, O_WRONLY);
 		write(fd_cl, "\n", strlen("\n")); 
 		close(fd_cl);
-		
-		printf("A pontuacao de %s foi de %d\n", a.clientes[i].nome, a.clientes[i].pontuacao);
 		a.clientes[i].sair = 1;
 	}
 	/*
@@ -368,16 +360,9 @@ void *campeonato(void *dados)
 		kill(a.clientes[i].pid, SIGUSR1);
 	}
 	
-/*
-	for (int i = 0; i < a.n_jogosAdecorrer; i++)
-	{
-		int pid;
-		printf("pid ");
-		scanf("%d\n", &pid);
-		kill(pid, SIGUSR1);
-	}*/
-	
 	printf("Terminou campeonato.\n");
+	sleep(2);
+	mostraPontuacao();
 
 	//free(thread_jogo);
 	pthread_exit(NULL);
