@@ -174,17 +174,13 @@ void *jogo(void *dados)
 	}
 	int res;
 	int bytes;
-	int filho;
 	char resp[500];
 	char resp1[500];
 	char input[20];
-	int tamanho = 50;
 	int status;
 	int pont_exit;
 	char fifo_name[50];
 	int fd_pipe_leitura, fd_pipe_escrita;
-	fd_set fontes;
-	struct timeval t;
 
 	res = fork();
 	if (res == -1)
@@ -262,50 +258,17 @@ void *jogo(void *dados)
 			while (cli->suspenso == 1)
 				sleep(1);
 
-			int sele;
-			do
+			read(fd_pipe_leitura, &resp, sizeof(resp));
+			strcat(resp, "\n");
+			//fprintf(stdout, "NUMERO:%s", resp);
+			//enviar a informacao lida para o jogo
+			bytes = write(pipe1[1], &resp, strlen(resp));
+			if (bytes == -1)
 			{
-				fflush(stdout);
-				printf(" ");
-				fflush(stdout);
-				FD_ZERO(&fontes);
-				//FD_SET(0, &fontes);
-				FD_SET(fd_pipe_leitura, &fontes);
-				t.tv_sec = 1;
-				t.tv_usec = 0;
-
-				sele = select(fd_pipe_leitura + 1, &fontes, NULL, NULL, &t);
-				printf("RES = %d\n", sele);
-
-				if (sele == 0)
-				{	//caso acabe timeout e ele tiver de sair  && cli->sair == 1
-					//	NUNCA ENTRA AQUI -> BUG NO TIMEOUT?
-					printf("TIMEOUT.\n");
-					if (cli->sair == 1)
-					{
-						printf("Acabou o jogo. Res = 0\n");
-						bytes = write(pipe1[1], "\n", strlen("\n"));
-						break;
-					}
-				}
-				else if (sele > 0 && FD_ISSET(fd_pipe_leitura, &fontes))
-				{
-					printf("ANTES DO READ.\n");
-					read(fd_pipe_leitura, &resp, sizeof(resp));
-					printf("LEU.\n");
-					strcat(resp, "\n");
-					//fprintf(stdout, "NUMERO:%s", resp);
-					//enviar a informacao lida para o jogo
-					bytes = write(pipe1[1], &resp, strlen(resp));
-					if (bytes == -1)
-					{
-						fprintf(stderr, "O pipe nao conseguiu escrever informacao.\n");
-						exit(0);
-					}
-					break;
-				}
-			} while (1);
-
+				fprintf(stderr, "O pipe nao conseguiu escrever informacao.\n");
+				exit(0);
+			}
+		
 		} while (cli->sair == 0);
 	}
 	printf("Cheguei AQUI.\n");
@@ -336,14 +299,14 @@ void *campeonato(void *dados)
 	TERMINA_CAMPEONATO = 0;
 	do
 	{
-		while (a.nclientes < 2 && FLAG_TERMINA == 0)
+		while (a.nclientes < 1 && FLAG_TERMINA == 0)
 			sleep(1);
 		do
 		{
 			sleep(1);
 			esp--;
 		} while (esp > 0 && FLAG_TERMINA == 0);
-	} while (a.nclientes < 2 && FLAG_TERMINA == 0);
+	} while (a.nclientes < 1 && FLAG_TERMINA == 0);
 
 	a.n_jogosAdecorrer = 0;
 	int r = 0;
@@ -380,11 +343,16 @@ void *campeonato(void *dados)
 	{
 		sleep(1);
 		dur--;
-	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0 && contaPessoasNoCampeonato() > 1);
+	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0 /*&& contaPessoasNoCampeonato() > 1*/);
 	TERMINA_CAMPEONATO = 1;
 
 	for (int i = 0; i < a.nclientes; i++)
 	{
+		//Para nao ficar a espera do numero jogado pelo cliente
+		int fd_cl=open(a.clientes[i].nome_pipe_leitura, O_WRONLY);
+		write(fd_cl, "\n", strlen("\n")); 
+		close(fd_cl);
+		
 		printf("A pontuacao de %s foi de %d\n", a.clientes[i].nome, a.clientes[i].pontuacao);
 		a.clientes[i].sair = 1;
 	}
