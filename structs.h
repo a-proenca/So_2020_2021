@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/select.h>
+#include <ctype.h>
 #include <sys/stat.h>
 #define TAM 50
 #define SERV_PIPE "pipe_servidor" //Trata de logins (arbitro <- cliente)
@@ -29,7 +30,6 @@ typedef struct jogosAdecorrer
     pthread_t thread;
     char nomejogo[TAM];
     char nomecliente[TAM];
-    int pid_jogo;
 }JogosAdecorrer;
 
 //estrutura cliente

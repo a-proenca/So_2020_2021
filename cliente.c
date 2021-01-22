@@ -156,14 +156,26 @@ int main(int argc, char argv[])
     fflush(stdout);
     printf(">>");
     fflush(stdout);
+
     FD_ZERO(&fontes);
     FD_SET(0, &fontes);      //preparar para receber do teclado
     FD_SET(fd_cli, &fontes); //preparar para receber do pipe
     int res = select(fd_cli + 1, &fontes, NULL, NULL, NULL);
+
     if (res > 0 && FD_ISSET(0, &fontes))
     { //se tiver a receber algo do teclado
       fgets(instrucao, TAM, stdin);
       instrucao[strlen(instrucao) - 1] = '\0';
+      if(isdigit(instrucao[0])){
+        //enviar a info ao arbitro
+        fd_servidor = open(c.nome_pipe_leitura, O_WRONLY) ;
+        bytes = write(fd_servidor, instrucao, sizeof(instrucao));
+        if (bytes == -1)
+        {
+          fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
+        }
+        close(fd_servidor);
+      }
       if (strcasecmp(instrucao, "#mygame") == 0)
       {
         if (strcasecmp(c.nome_jogo, "") == 0)
@@ -189,23 +201,7 @@ int main(int argc, char argv[])
       {
         fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
       }
-      //IF RESP FOR UM NUMERO
-      //c.pontuacao=atoi(resp)
-      //PONTUACAO
-      //ELSE
-      printf("Jogo: %d %s\n", bytes, resp);
-      fflush(stdin);
-      scanf("%s",msg);
-      msg[strlen(msg)] = '\0';
-
-      //enviar a info ao arbitro
-      fd_servidor = open(c.nome_pipe_leitura, O_WRONLY) ;
-      bytes = write(fd_servidor, msg, sizeof(msg));
-      if (bytes == -1)
-      {
-        fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
-      }
-      close(fd_servidor);
+      printf("Jogo>> %s\n", resp);
     }
   }
   //mandar ao servidor para dar quit!
