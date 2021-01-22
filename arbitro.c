@@ -98,16 +98,15 @@ void *trata_logins()
 		read(fd_serv, &aux, sizeof(Cliente)); //Leio o cliente
 
 		//Verificar se o cliente quer introduzir algum comando
-		if (strcmp(aux.comando, "") != 0)
+		if (strcmp(aux.comando, "#mygame") == 0)
 		{ //Significa que o cliente ja esta logado e quer introduzir um comando
 			char resp[500];
 			for (int i = 0; i < a.nclientes; i++)
 			{
-				if (strcmp(aux.nome,a.clientes[i].nome)== 0)
+				if (strcmp(aux.nome, a.clientes[i].nome) == 0)
 				{
 					fd_client = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
 					//Escrever no pipe o nome do jogo
-					printf("%s\n", a.clientes[i].nome_jogo);
 					strcpy(resp, "O jogo que esta a jogar e ");
 					strcat(resp, a.clientes[i].nome_jogo);
 					bytes = write(fd_client, resp, strlen(resp));
@@ -120,23 +119,20 @@ void *trata_logins()
 			}
 		}
 		//Fim da verificacao
-		
+
 		else if (aux.sair == 0)
 		{
 			if (verificaNome(aux.nome) == 0) //Verificacao do nome
 			{
 				a.clientes[a.nclientes] = aux;
-				a.nclientes++; //vou adicionar um cliente ao vetor dos clientes
-				if (a.clientes[a.nclientes - 1].atendido != 1)
+
+				if (a.clientes[a.nclientes].atendido != 1)
 				{
-					a.clientes[a.nclientes - 1].atendido = 1;
-					//GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE ESCRITURA
-					//sprintf(fifo_name, SERV_PIPE_WR, a.clientes[a.nclientes - 1].pid);
-					//strcpy(a.clientes[a.nclientes - 1].nome_pipe_escrita, fifo_name);
+					a.clientes[a.nclientes].atendido = 1;
 
-					fd_client = open(a.clientes[a.nclientes - 1].nome_pipe_escrita, O_WRONLY);
-					printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes - 1].nome);
-
+					fd_client = open(a.clientes[a.nclientes].nome_pipe_escrita, O_WRONLY);
+					printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes].nome);
+					a.nclientes++; //vou adicionar um cliente ao vetor dos clientes
 					bytes = write(fd_client, "Bem-vindo Cliente!", sizeof("Bem-vindo Cliente!"));
 					if (bytes == 0)
 					{
@@ -157,9 +153,14 @@ void *trata_logins()
 				close(fd_client);
 			}
 		}
-		else
+		else // Trata logouts
 		{
-			if (FLAG_TERMINA == 1 || TERMINA_CAMPEONATO == 0)
+			for (int i = 0; i < a.nclientes; i++)
+			{
+				if (strcmp(aux.nome, a.clientes[i].nome) == 0)
+					a.clientes[i].sair=1;
+			}
+			if (TERMINA_CAMPEONATO == 0) //Se nao tiver acontecer nenhum campeonato
 			{
 				eliminaCliente(aux.nome);
 			}
