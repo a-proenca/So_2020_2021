@@ -451,6 +451,8 @@ int main(int argc, char *argv[])
 	a.n_jogos = 0;
 	char comando[TAM];
 
+	srand(time(NULL));
+
 	if (access(SERV_PIPE, F_OK) == 0) //verificar se ja existe algum servidor a correr
 	{
 		fprintf(stderr, "[Erro] O servidor já existe.\n");
