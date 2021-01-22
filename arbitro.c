@@ -203,7 +203,7 @@ void *jogo(void *dados)
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
 		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2
-		if (strcmp(cli->nome_jogo, "G_004")==0)
+		if (strcmp(cli->nome_jogo, "G_004\n")==0)
 		{
 			execl("Jogo/G_004", cli->nome_jogo, NULL);
 		}
@@ -314,7 +314,7 @@ void *campeonato(void *dados)
 		if (strcmp(a.clientes[r].nome_jogo, "") == 0)
 		{
 			a.n_jogosAdecorrer++;
-			j = rand() % a.n_jogos + 1;
+			j = rand() % a.n_jogos;
 			strcpy(a.clientes[r].nome_jogo, a.jogos[j].identificacao);
 			printf("O jogador %s vai jogar o jogo %s\n", a.clientes[r].nome, a.jogos[j].identificacao);
 		}
