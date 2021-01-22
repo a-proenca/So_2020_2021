@@ -98,7 +98,7 @@ void *trata_logins()
 		//Verificar se o cliente quer introduzir algum comando
 		if (strcmp(aux.comando, "#mygame") == 0)
 		{ //Significa que o cliente ja esta logado e quer introduzir um comando
-			char resp[500];
+			char resp[700];
 			for (int i = 0; i < a.nclientes; i++)
 			{
 				if (strcmp(aux.nome, a.clientes[i].nome) == 0)
@@ -160,7 +160,7 @@ void *trata_logins()
 			}
 			if (TERMINA_CAMPEONATO != 0) //Se nao tiver acontecer nenhum campeonato
 			{
-				char resp[500];
+				char resp[700];
 				eliminaCliente(aux.nome);
 				int fd_cl = open(aux.nome_pipe_escrita, O_RDWR);
 				strcpy(resp, "Nao esta a decorrer nenhum jogo. Adeus!");
@@ -241,8 +241,7 @@ void *jogo(void *dados)
 	}
 	int res;
 	int bytes;
-	char resp[500];
-	char resp1[500];
+	char resp[700];
 	char input[20];
 	int status;
 	int pont_exit;
@@ -263,7 +262,7 @@ void *jogo(void *dados)
 		close(pipe1[1]);   //fechar parte escrita pipe1
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
-		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2
+		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2                
 		if (strcmp(cli->nome_jogo, "G_004\n") == 0)
 		{
 			execl("Jogo/G_004", cli->nome_jogo, NULL);
@@ -285,8 +284,6 @@ void *jogo(void *dados)
 		do
 		{
 			memset(resp, 0, sizeof(resp));
-			memset(resp1, 0, sizeof(resp1));
-
 			if (TERMINA_CAMPEONATO == 1)
 			{
 				pthread_exit(NULL);
@@ -297,17 +294,8 @@ void *jogo(void *dados)
 			{
 				fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
 			}
-			//ler o printf seguinte do jogo
-			bytes = read(pipe2[0], resp1, sizeof(resp1));
-			if (bytes == -1)
-			{
-				fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
-			}
-			//juntar a info para enviar pelo pipe
-			strcat(resp, resp1);
-
+		
 			//vou enviar a informacao que li do jogo para o cliente
-			//fprintf(stdout, "%s\t", resp);
 			while (cli->suspenso == 1)
 				sleep(1);
 			write(fd_pipe_escrita, resp, strlen(resp));
@@ -341,9 +329,9 @@ void *jogo(void *dados)
 		pont_exit = WEXITSTATUS(status);
 		cli->pontuacao = pont_exit;
 
+		close(fd_pipe_leitura);
 		snprintf(resp, sizeof(resp), "A pontuacao e %d", pont_exit);
 		write(fd_pipe_escrita, resp, strlen(resp));
-		close(fd_pipe_leitura);
 		close(fd_pipe_escrita);
 	}
 }
@@ -389,7 +377,10 @@ void *campeonato(void *dados)
 			strcpy(a.jogosAdecorrer[k].nomejogo, a.clientes[i].nome_jogo);
 			strcpy(a.jogosAdecorrer[k].nomecliente, a.clientes[i].nome);
 			//Quando a 2 thread começa a 1 pára
-			pthread_create(&a.jogosAdecorrer[k].thread, NULL, jogo, (void *)&a.clientes[i]);
+			if(pthread_create(&a.jogosAdecorrer[k].thread, NULL, jogo, (void *)&a.clientes[i]) != 0){
+				printf("Erro na criacao da Thread\n");
+				exit(0);
+			}
 			k++;
 		}
 	}
@@ -575,7 +566,7 @@ int main(int argc, char *argv[])
 					a.clientes[i].suspenso = 1;
 					printf("O jogador %s foi suspenso.\n", a.clientes[i].nome);
 					int fd_pipe = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
-					char resp[500];
+					char resp[700];
 					strcpy(resp, "Jogador suspenso!\n");
 					write(fd_pipe, resp, strlen(resp));
 					close(fd_pipe);
@@ -592,7 +583,7 @@ int main(int argc, char *argv[])
 					a.clientes[i].suspenso = 0;
 					printf("O jogador %s deixou de estar suspenso.\n", a.clientes[i].nome);
 					int fd_pipe = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
-					char resp[500];
+					char resp[700];
 					strcpy(resp, "Jogador deixou de estar suspenso!\n");
 					write(fd_pipe, resp, strlen(resp));
 					close(fd_pipe);

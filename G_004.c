@@ -43,11 +43,12 @@ int main(int argc, char *argv[])
            "\nO seu adversario irá escolher tambem 1 dos 3 possiveis"
            "\nPedra ganha Tesoura"
            "\nTesoura ganha Papel"
-           "\nPapel ganha Pedra");
+           "\nPapel ganha Pedra"
+           "\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
 
     do
     {
-        printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
+    //    printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
         scanf("%s", objeto);
 
         numero = atoi(objeto);
@@ -59,28 +60,28 @@ int main(int argc, char *argv[])
             {
                 PONTUACAO += 3; //Recebe 3 pontos por vitoria
                 ronda++;
-                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você ganhou!", r, ronda);
+                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você ganhou!\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ", r, ronda);
             }
             if (ganha == 2)
             {
                 ronda++;
-                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você perdeu!", r, ronda);
+                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Você perdeu!\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ", r, ronda);
             }
             if (ganha == 0)
             {
                 ronda++;
                 PONTUACAO += 1;
-                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Empatada", r, ronda); //Recebe 1 ponto por empate
+                printf("\nO seu adversario jogou o objeto correspondente ao numero %d.Ronda %d Empatada\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ", r, ronda); //Recebe 1 ponto por empate
             }
         }
         else
         {
-            printf("\nNumero Invalido.");
+            printf("\nNumero Invalido.\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
         }
     } while (flag_termina == 0);
 
     //itoa(PONTUACAO,pontuacao2,10);
-    printf("PONT = %d", PONTUACAO);
+   // printf("PONT = %d", PONTUACAO);
 
     exit(PONTUACAO);
 

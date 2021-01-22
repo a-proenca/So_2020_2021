@@ -7,11 +7,12 @@ int fd_serv;
 int fd_cli;
 char fifo_name[50];
 char fifo_name_serv[50];
+int QUERO_SAIR=0;
 
 void acabou_campeonato()
 {
   printf("Acabou campeonato.\n");
-  //falta a parte da pontuacao
+  QUERO_SAIR=1;
 }
 //fazer unlink caso o programa seja interrompido ctrl+c;
 void interrupcao_c()
@@ -85,7 +86,6 @@ int main(int argc, char argv[])
   int bytes;
   char instrucao[TAM];
   int fd_servidor;
-  char msg[500] = "";
 
   setbuf(stdout, NULL);
   if (signal(SIGINT, interrupcao_c) == SIG_ERR)
@@ -152,7 +152,6 @@ int main(int argc, char argv[])
   if (identificacao() == 0)
     return 0;
 
-  int QUERO_SAIR=0;
 
   fd_cli = open(fifo_name_serv, O_RDONLY | O_NONBLOCK);
   fd_set fontes;
@@ -209,7 +208,7 @@ int main(int argc, char argv[])
     }
     else if (res > 0 && FD_ISSET(fd_cli, &fontes))
     { //se receber algo do pipe
-      char resp[500];
+      char resp[700];
       memset(resp, 0, sizeof(resp));
       bytes = read(fd_cli, &resp, sizeof(resp));
       if (bytes == -1)
@@ -221,12 +220,7 @@ int main(int argc, char argv[])
       printf(" %s\n", resp);
     }
   }
-  //mandar ao servidor para dar quit!
- /* bytes = write(fd_serv, &c, sizeof(Cliente));
-  if (bytes == 0)
-  {
-    printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
-  }*/
+ 
   close(fd_serv);
   close(fd_cli);
   unlink(fifo_name_serv);

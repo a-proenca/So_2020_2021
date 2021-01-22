@@ -37,11 +37,12 @@ int main(int argc, char *argv[])
     printf("\n---------------------BEM VINDO AO JOGO------------"
            "\n--------------------------------------Regras----------------------------------"
            "\nEscolher um numero par ou impar (1,2)"
-           "\n Adivinhar se o numero do adversario é para ou impar");
+           "\n Adivinhar se o numero do adversario é para ou impar"
+           "\nEscolha par ou impar (1,2) ");
 
     do
     {
-        printf("\nEscolha par ou impar (1,2) ");
+    //    printf("\nEscolha par ou impar (1,2) ");
         scanf("%s", objeto);
         
         numero = atoi(objeto);
@@ -50,21 +51,21 @@ int main(int argc, char *argv[])
             ganha = verifica(numero, r);
             if (ganha == 1)
             {
-                printf("\nO numero era = %d Acertou! Ganhou 3 pontos.", r);
+                printf("\nO numero era = %d Acertou! Ganhou 3 pontos.\nEscolha par ou impar (1,2) ", r);
                 PONTUACAO += 3;
             }
             else
             {
-                printf("\nO numero era = %d  Perdeu.", r);
+                printf("\nO numero era = %d  Perdeu.\nEscolha par ou impar (1,2) ", r);
             }
         }
         else{
-            printf("\nNumero Invalido.");
+            printf("\nNumero Invalido.\nEscolha par ou impar (1,2) ");
         }
        
     } while (flag_termina == 0);
 
-    printf("PONT = %d", PONTUACAO);
+  //  printf("PONT = %d", PONTUACAO);
 
     exit(PONTUACAO);
 
