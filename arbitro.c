@@ -504,10 +504,15 @@ int main(int argc, char *argv[])
 			strcpy(comando, devolve_nome(comando));
 			for (int i = 0; i < a.nclientes; i++)
 			{
-				if (strcasecmp(a.clientes[i].nome, comando) == 0)
+				if (strcasecmp(a.clientes[i].nome, comando) == 0 && a.clientes[i].suspenso == 0)
 				{
 					a.clientes[i].suspenso = 1;
 					printf("O jogador %s foi suspenso.\n", a.clientes[i].nome);
+					int fd_pipe = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
+					char resp[500];
+					strcpy(resp, "Jogador suspenso!\n");
+					write(fd_pipe, resp, strlen(resp));
+					close(fd_pipe);
 				}
 			}
 		}
@@ -516,10 +521,15 @@ int main(int argc, char *argv[])
 			strcpy(comando, devolve_nome(comando));
 			for (int i = 0; i < a.nclientes; i++)
 			{
-				if (strcasecmp(a.clientes[i].nome, comando) == 0)
+				if (strcasecmp(a.clientes[i].nome, comando) == 0 && a.clientes[i].suspenso == 1)
 				{
 					a.clientes[i].suspenso = 0;
 					printf("O jogador %s deixou de estar suspenso.\n", a.clientes[i].nome);
+					int fd_pipe = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
+					char resp[500];
+					strcpy(resp, "Jogador deixou de estar suspenso!\n");
+					write(fd_pipe, resp, strlen(resp));
+					close(fd_pipe);
 				}
 			}
 		}
