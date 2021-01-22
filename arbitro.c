@@ -158,9 +158,9 @@ void *trata_logins()
 			for (int i = 0; i < a.nclientes; i++)
 			{
 				if (strcmp(aux.nome, a.clientes[i].nome) == 0)
-					a.clientes[i].sair=1;
+					a.clientes[i].sair = 1;
 			}
-			if (TERMINA_CAMPEONATO == 0) //Se nao tiver acontecer nenhum campeonato
+			if (TERMINA_CAMPEONATO != 0) //Se nao tiver acontecer nenhum campeonato
 			{
 				eliminaCliente(aux.nome);
 			}
@@ -184,9 +184,39 @@ void comandosMenu()
 
 void mostraPontuacao()
 {
+	int n_vencedores = 0, nao_vencedores = 0;
 	for (int i = 0; i < a.nclientes; i++)
 	{
-		printf("Pontuacao do %s - %d pontos\n", a.clientes[i].nome, a.clientes[i].pontuacao);
+		if (a.clientes[i].vencedor == 1)
+			n_vencedores++;
+		else
+			nao_vencedores++;
+		a.clientes[i].atendido = 0;
+	}
+	int indice = -1, max = -1;
+	for (int i = 0; i < n_vencedores; i++)
+	{
+		max = -1;
+		for (int j = 0; j < a.nclientes; j++)
+			if (a.clientes[j].atendido == 0 && a.clientes[j].vencedor == 1 && a.clientes[j].pontuacao > max)
+			{
+				indice = j;
+				max = a.clientes[j].pontuacao;
+			}
+		printf(">Vencedores< %d ) Pontuacao do %s - %d pontos\n", i + 1, a.clientes[indice].nome, a.clientes[indice].pontuacao);
+		a.clientes[indice].atendido = 1;
+	}
+	for (int i = 0; i < nao_vencedores; i++)
+	{
+		max = -1;
+		for (int j = 0; j < a.nclientes; j++)
+			if (a.clientes[j].atendido == 0 && a.clientes[j].vencedor == 0 && a.clientes[j].pontuacao > max)
+			{
+				indice = j;
+				max = a.clientes[j].pontuacao;
+			}
+		printf(">Desistentes< %d ) Pontuacao do %s - %d pontos\n", i + 1, a.clientes[indice].nome, a.clientes[indice].pontuacao);
+		a.clientes[indice].atendido = 1;
 	}
 }
 
@@ -361,7 +391,6 @@ void *campeonato(void *dados)
 			k++;
 		}
 	}
-
 	do
 	{
 		sleep(1);
@@ -372,6 +401,8 @@ void *campeonato(void *dados)
 
 	for (int i = 0; i < a.nclientes; i++)
 	{
+		if (a.clientes[i].sair == 0)
+			a.clientes[i].vencedor = 1;
 		a.clientes[i].suspenso = 0;
 		//Para nao ficar a espera do numero jogado pelo cliente
 		int fd_cl = open(a.clientes[i].nome_pipe_leitura, O_RDWR);

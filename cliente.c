@@ -118,6 +118,7 @@ int main(int argc, char argv[])
   strcpy(c.nome_pipe_escrita, fifo_name_serv);
   //GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE LEITURA(ARB <- CLI)
   strcpy(c.nome_pipe_leitura, fifo_name);
+  c.vencedor=0;
   strcpy(c.comando, "");
 
   if (access(fifo_name, F_OK) == 0)

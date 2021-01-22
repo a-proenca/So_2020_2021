@@ -36,6 +36,7 @@ typedef struct jogosAdecorrer
 typedef struct cliente
 {
     int pontuacao;
+    int vencedor;
     int pid;
     int atendido; 
     int suspenso;
