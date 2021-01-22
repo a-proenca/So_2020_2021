@@ -6,7 +6,7 @@ int espera;
 Arbitro a;
 
 int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
-int TERMINA_CAMPEONATO = 0;
+int TERMINA_CAMPEONATO = 1;
 
 void interrupcao()
 {
@@ -67,10 +67,8 @@ void guardaJogos()
 
 void eliminaCliente(char *nome)
 {
-	printf("El\n");
 	for (int i = 0; i < a.nclientes; i++)
 	{
-		printf("uo\n");
 		if (strcasecmp(a.clientes[i].nome, nome) == 0)
 		{
 			for (int j = i; j < a.nclientes - 1; j++)
@@ -162,7 +160,12 @@ void *trata_logins()
 			}
 			if (TERMINA_CAMPEONATO != 0) //Se nao tiver acontecer nenhum campeonato
 			{
+				char resp[500];
 				eliminaCliente(aux.nome);
+				int fd_cl = open(aux.nome_pipe_escrita, O_RDWR);
+				strcpy(resp, "Nao esta a decorrer nenhum jogo. Adeus!");
+				write(fd_cl, resp, strlen(resp));
+				close(fd_cl);
 			}
 		}
 		close(fd_serv);
@@ -336,7 +339,6 @@ void *jogo(void *dados)
 	if (WIFEXITED(status))
 	{
 		pont_exit = WEXITSTATUS(status);
-		printf("A PONTUACAO FINAL FOI: %d\n", pont_exit);
 		cli->pontuacao = pont_exit;
 
 		snprintf(resp, sizeof(resp), "A pontuacao e %d", pont_exit);
@@ -350,7 +352,6 @@ void *jogo(void *dados)
 void *campeonato(void *dados)
 {
 	int dur = duracao, esp = espera;
-	TERMINA_CAMPEONATO = 0;
 	do
 	{
 		while (a.nclientes < 2 && FLAG_TERMINA == 0)
@@ -379,6 +380,7 @@ void *campeonato(void *dados)
 	} while (a.n_jogosAdecorrer < a.maxplayers && a.n_jogosAdecorrer < a.nclientes);
 
 	printf("Comecou campeonato\n");
+	TERMINA_CAMPEONATO=0;
 	int k = 0;
 	for (int i = 0, k = 0; i < a.nclientes; i++)
 	{

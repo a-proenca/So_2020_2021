@@ -152,6 +152,8 @@ int main(int argc, char argv[])
   if (identificacao() == 0)
     return 0;
 
+  int QUERO_SAIR=0;
+
   fd_cli = open(fifo_name_serv, O_RDONLY | O_NONBLOCK);
   fd_set fontes;
   while (c.sair != 1)
@@ -196,6 +198,13 @@ int main(int argc, char argv[])
       else if (strcasecmp(instrucao, "#quit") == 0)
       {
         c.sair = 1;
+        bytes = write(fd_serv, &c, sizeof(Cliente));
+        if (bytes == 0)
+        {
+          printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
+        }
+        c.sair=0;
+        QUERO_SAIR=1;
       }
     }
     else if (res > 0 && FD_ISSET(fd_cli, &fontes))
@@ -207,15 +216,18 @@ int main(int argc, char argv[])
       {
         fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
       }
+      if(QUERO_SAIR==1)
+        c.sair=1;
       printf(" %s\n", resp);
     }
   }
   //mandar ao servidor para dar quit!
-  bytes = write(fd_serv, &c, sizeof(Cliente));
+ /* bytes = write(fd_serv, &c, sizeof(Cliente));
   if (bytes == 0)
   {
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
-  }
+  }*/
+  close(fd_serv);
   close(fd_cli);
   unlink(fifo_name_serv);
   unlink(fifo_name);
