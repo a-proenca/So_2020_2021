@@ -36,7 +36,8 @@ void interrupcao_ar()
   exit(EXIT_FAILURE);
 }
 
-int identificacao(){
+int identificacao()
+{
   char mensagem_serv[50];
   int bytes;
 
@@ -84,7 +85,7 @@ int main(int argc, char argv[])
   int bytes;
   char instrucao[TAM];
   int fd_servidor;
-  char msg[500]="";
+  char msg[500] = "";
 
   setbuf(stdout, NULL);
   if (signal(SIGINT, interrupcao_c) == SIG_ERR)
@@ -117,6 +118,7 @@ int main(int argc, char argv[])
   strcpy(c.nome_pipe_escrita, fifo_name_serv);
   //GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE LEITURA(ARB <- CLI)
   strcpy(c.nome_pipe_leitura, fifo_name);
+  strcpy(c.comando, "");
 
   if (access(fifo_name, F_OK) == 0)
   { /// verifica se o pipe ja esta aberto
@@ -146,7 +148,7 @@ int main(int argc, char argv[])
     exit(EXIT_FAILURE);
   }
 
-  if(identificacao() == 0)
+  if (identificacao() == 0)
     return 0;
 
   fd_cli = open(fifo_name_serv, O_RDONLY | O_NONBLOCK);
@@ -166,9 +168,11 @@ int main(int argc, char argv[])
     { //se tiver a receber algo do teclado
       fgets(instrucao, TAM, stdin);
       instrucao[strlen(instrucao) - 1] = '\0';
-      if(isdigit(instrucao[0])){
+
+      if (isdigit(instrucao[0]))
+      { //Vai responder ao jogo
         //enviar a info ao arbitro
-        fd_servidor = open(c.nome_pipe_leitura, O_WRONLY) ;
+        fd_servidor = open(c.nome_pipe_leitura, O_WRONLY);
         bytes = write(fd_servidor, instrucao, sizeof(instrucao));
         if (bytes == -1)
         {
@@ -176,16 +180,17 @@ int main(int argc, char argv[])
         }
         close(fd_servidor);
       }
-      if (strcasecmp(instrucao, "#mygame") == 0)
+
+      if (strcasecmp(instrucao, "#mygame") == 0) // Comando #mygame
       {
-        if (strcasecmp(c.nome_jogo, "") == 0)
+        strcpy(c.comando, instrucao);
+        fd_servidor = open(SERV_PIPE, O_WRONLY);
+        bytes = write(fd_servidor, &c, sizeof(c));
+        if (bytes == -1)
         {
-          printf("Nao esta nenhum jogo a decorrer.\n");
+          fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
         }
-        else
-        {
-          printf("O jogo que esta a jogar e o %s\n", c.nome_jogo);
-        }
+        close(fd_servidor);
       }
       else if (strcasecmp(instrucao, "#quit") == 0)
       {
@@ -195,13 +200,13 @@ int main(int argc, char argv[])
     else if (res > 0 && FD_ISSET(fd_cli, &fontes))
     { //se receber algo do pipe
       char resp[500];
-      memset(resp,0,sizeof(resp));
+      memset(resp, 0, sizeof(resp));
       bytes = read(fd_cli, &resp, sizeof(resp));
       if (bytes == -1)
       {
         fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
       }
-      printf("Jogo>> %s\n", resp);
+      printf(" %s\n", resp);
     }
   }
   //mandar ao servidor para dar quit!

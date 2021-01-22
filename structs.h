@@ -44,6 +44,7 @@ typedef struct cliente
     char nome_pipe_leitura[TAM];
     char nome_jogo[TAM]; //Nome do jogo    
     int sair; //1- sai do jogo 
+    char comando[20];
 } Cliente;
 
 //estrutura arbitro
