@@ -223,6 +223,8 @@ void *jogo(void *dados)
 
 		do
 		{
+			memset(resp,0,sizeof(resp));
+			memset(resp1,0,sizeof(resp1));
 
 			if (TERMINA_CAMPEONATO == 1)
 			{
@@ -342,6 +344,7 @@ void *campeonato(void *dados)
 	
 	for (int i = 0; i < a.nclientes; i++)
 	{
+		a.clientes[i].suspenso = 0;
 		//Para nao ficar a espera do numero jogado pelo cliente
 		int fd_cl=open(a.clientes[i].nome_pipe_leitura, O_RDWR);
 		write(fd_cl, "\n", strlen("\n")); 
