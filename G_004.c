@@ -47,14 +47,9 @@ int main(int argc, char *argv[])
 
     do
     {
-
         printf("\nInsira o numero correspondente ao Objeto (1-Pedra;2-Papel;3-Tesoura): ");
         scanf("%s", objeto);
 
-        /*if (numero2 == 0)
-            { //Se o cliente puser #quit o arbitro manda 0
-                flag_termina = 1;
-            }*/
         numero = atoi(objeto);
         if (numero > 0 && numero < 4)
         {

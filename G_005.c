@@ -41,30 +41,27 @@ int main(int argc, char *argv[])
 
     do
     {
-        do
-        {
-            printf("\nEscolha par ou impar (1,2)");
-            scanf("%s", objeto);
-            numero = atoi(objeto);
-        } while ((numero < 1) || (numero > 2));
-
-        /*if (numero2 == 0)
-            { //Se o cliente puser #quit o arbitro manda 0
-                flag_termina = 1;
-            }*/
-        r = rand() % 99 + 1;
-        ganha = verifica(numero, r);
-        if (ganha == 1)
-        {
-            printf("O numero era = %d", r);
-            printf("Acertou! Ganhou 3 pontos.\n");
-            PONTUACAO += 3;
+        printf("\nEscolha par ou impar (1,2) ");
+        scanf("%s", objeto);
+        
+        numero = atoi(objeto);
+        if(numero == 1 || numero==2){
+             r = rand() % 99 + 1;
+            ganha = verifica(numero, r);
+            if (ganha == 1)
+            {
+                printf("\nO numero era = %d Acertou! Ganhou 3 pontos.", r);
+                PONTUACAO += 3;
+            }
+            else
+            {
+                printf("\nO numero era = %d  Perdeu.", r);
+            }
         }
-        else
-        {
-            printf("O numero era = %d", r);
-            printf("Perdeu.\n");
+        else{
+            printf("\nNumero Invalido.");
         }
+       
     } while (flag_termina == 0);
 
     printf("PONT = %d", PONTUACAO);

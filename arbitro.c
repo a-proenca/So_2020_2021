@@ -203,7 +203,7 @@ void *jogo(void *dados)
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
 		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2
-		if (strcmp(cli->nome_jogo, "G_004"))
+		if (strcmp(cli->nome_jogo, "G_004")==0)
 		{
 			execl("Jogo/G_004", cli->nome_jogo, NULL);
 		}
@@ -293,14 +293,14 @@ void *campeonato(void *dados)
 	TERMINA_CAMPEONATO = 0;
 	do
 	{
-		while (a.nclientes < 1 && FLAG_TERMINA == 0)
+		while (a.nclientes < 2 && FLAG_TERMINA == 0)
 			sleep(1);
 		do
 		{
 			sleep(1);
 			esp--;
 		} while (esp > 0 && FLAG_TERMINA == 0);
-	} while (a.nclientes < 1 && FLAG_TERMINA == 0);
+	} while (a.nclientes < 2 && FLAG_TERMINA == 0);
 
 	a.n_jogosAdecorrer = 0;
 	int r = 0;
@@ -309,7 +309,6 @@ void *campeonato(void *dados)
 	do
 	{
 		r = rand() % a.nclientes;
-		printf("u\n");
 		if (strcmp(a.clientes[r].nome_jogo, "") == 0)
 		{
 			a.n_jogosAdecorrer++;
@@ -337,13 +336,14 @@ void *campeonato(void *dados)
 	{
 		sleep(1);
 		dur--;
-	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0 /*&& contaPessoasNoCampeonato() > 1*/);
+		printf("\nDur %d\n", dur);
+	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0 && contaPessoasNoCampeonato() > 1);
 	TERMINA_CAMPEONATO = 1;
-
+	
 	for (int i = 0; i < a.nclientes; i++)
 	{
 		//Para nao ficar a espera do numero jogado pelo cliente
-		int fd_cl=open(a.clientes[i].nome_pipe_leitura, O_WRONLY);
+		int fd_cl=open(a.clientes[i].nome_pipe_leitura, O_RDWR);
 		write(fd_cl, "\n", strlen("\n")); 
 		close(fd_cl);
 		a.clientes[i].sair = 1;
