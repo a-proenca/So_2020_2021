@@ -152,7 +152,7 @@ int main(int argc, char argv[])
   if (identificacao() == 0)
     return 0;
 
-  fd_cli = open(fifo_name_serv, O_RDONLY | O_NONBLOCK);
+  fd_cli = open(fifo_name_serv, O_RDWR);
   fd_set fontes;
   while (c.sair != 1)
   {
@@ -214,8 +214,6 @@ int main(int argc, char argv[])
       {
         fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
       }
-      close(fd_cli);
-      fd_cli = open(fifo_name_serv, O_RDONLY | O_NONBLOCK); //voltei a abrir e fechar o pipe pq estava a ler lixo
 
       printf(" %s\n", resp);
       if (QUERO_SAIR == 1)
