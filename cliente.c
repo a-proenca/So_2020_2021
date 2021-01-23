@@ -7,12 +7,12 @@ int fd_serv;
 int fd_cli;
 char fifo_name[50];
 char fifo_name_serv[50];
-int QUERO_SAIR=0;
+int QUERO_SAIR = 0;
 
 void acabou_campeonato()
 {
   printf("Acabou campeonato.\n");
-  QUERO_SAIR=1;
+  QUERO_SAIR = 1;
 }
 //fazer unlink caso o programa seja interrompido ctrl+c;
 void interrupcao_c()
@@ -118,7 +118,7 @@ int main(int argc, char argv[])
   strcpy(c.nome_pipe_escrita, fifo_name_serv);
   //GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE LEITURA(ARB <- CLI)
   strcpy(c.nome_pipe_leitura, fifo_name);
-  c.vencedor=0;
+  c.vencedor = 0;
   strcpy(c.comando, "");
 
   if (access(fifo_name, F_OK) == 0)
@@ -151,7 +151,6 @@ int main(int argc, char argv[])
 
   if (identificacao() == 0)
     return 0;
-
 
   fd_cli = open(fifo_name_serv, O_RDONLY | O_NONBLOCK);
   fd_set fontes;
@@ -202,8 +201,8 @@ int main(int argc, char argv[])
         {
           printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
         }
-        c.sair=0;
-        QUERO_SAIR=1;
+        c.sair = 0;
+        QUERO_SAIR = 1; // so sai no fim do campeonato dps de receber a pontuacao
       }
     }
     else if (res > 0 && FD_ISSET(fd_cli, &fontes))
@@ -215,12 +214,15 @@ int main(int argc, char argv[])
       {
         fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
       }
-      if(QUERO_SAIR==1)
-        c.sair=1;
+      close(fd_cli);
+      fd_cli = open(fifo_name_serv, O_RDONLY | O_NONBLOCK); //voltei a abrir e fechar o pipe pq estava a ler lixo
+
       printf(" %s\n", resp);
+      if (QUERO_SAIR == 1)
+        c.sair = 1;
     }
   }
- 
+
   close(fd_serv);
   close(fd_cli);
   unlink(fifo_name_serv);

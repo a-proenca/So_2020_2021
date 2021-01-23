@@ -185,15 +185,15 @@ void comandosMenu()
 	printf("=================================\n");
 }
 
-void mostraPontuacao()
+int mostraPontuacao() //Retorna o indice do cliente vencedor
 {
-	int n_vencedores = 0, nao_vencedores = 0;
+	int n_vencedores = 0, nao_vencedores = 0, retorna = -1;
 	for (int i = 0; i < a.nclientes; i++)
 	{
 		if (a.clientes[i].vencedor == 1)
 			n_vencedores++;
 		else
-			nao_vencedores++;
+			nao_vencedores++; //desistentes
 		a.clientes[i].atendido = 0;
 	}
 	int indice = -1, max = -1;
@@ -206,8 +206,10 @@ void mostraPontuacao()
 				indice = j;
 				max = a.clientes[j].pontuacao;
 			}
+		if (i == 0)
+			retorna = indice;
 		printf(">Vencedores< %d ) Pontuacao do %s - %d pontos\n", i + 1, a.clientes[indice].nome, a.clientes[indice].pontuacao);
-		a.clientes[indice].atendido = 1;
+		a.clientes[indice].atendido = 1; //para nao voltar a mostrar o mesmo cliente
 	}
 	for (int i = 0; i < nao_vencedores; i++)
 	{
@@ -218,9 +220,12 @@ void mostraPontuacao()
 				indice = j;
 				max = a.clientes[j].pontuacao;
 			}
+		if (i == 0 && retorna == -1)
+			retorna = indice;
 		printf(">Desistentes< %d ) Pontuacao do %s - %d pontos\n", i + 1, a.clientes[indice].nome, a.clientes[indice].pontuacao);
 		a.clientes[indice].atendido = 1;
 	}
+	return retorna;
 }
 
 void *jogo(void *dados)
@@ -262,7 +267,7 @@ void *jogo(void *dados)
 		close(pipe1[1]);   //fechar parte escrita pipe1
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
-		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2                
+		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2
 		if (strcmp(cli->nome_jogo, "G_004\n") == 0)
 		{
 			execl("Jogo/G_004", cli->nome_jogo, NULL);
@@ -294,7 +299,7 @@ void *jogo(void *dados)
 			{
 				fprintf(stderr, "O pipe nao conseguiu ler informacao.\n");
 			}
-		
+
 			//vou enviar a informacao que li do jogo para o cliente
 			while (cli->suspenso == 1)
 				sleep(1);
@@ -305,6 +310,7 @@ void *jogo(void *dados)
 				sleep(1);
 
 			read(fd_pipe_leitura, &resp, sizeof(resp));
+			close(fd_pipe_leitura);
 			strcat(resp, "\n");
 			//fprintf(stdout, "NUMERO:%s", resp);
 			//enviar a informacao lida para o jogo
@@ -329,9 +335,9 @@ void *jogo(void *dados)
 		pont_exit = WEXITSTATUS(status);
 		cli->pontuacao = pont_exit;
 
-		close(fd_pipe_leitura);
-		snprintf(resp, sizeof(resp), "A pontuacao e %d", pont_exit);
-		write(fd_pipe_escrita, resp, strlen(resp));
+	//	close(fd_pipe_leitura);
+		//	snprintf(resp, sizeof(resp), "A pontuacao e %d", pont_exit);
+		//	write(fd_pipe_escrita, resp, strlen(resp));
 		close(fd_pipe_escrita);
 	}
 }
@@ -368,7 +374,7 @@ void *campeonato(void *dados)
 	} while (a.n_jogosAdecorrer < a.maxplayers && a.n_jogosAdecorrer < a.nclientes);
 
 	printf("Comecou campeonato\n");
-	TERMINA_CAMPEONATO=0;
+	TERMINA_CAMPEONATO = 0;
 	int k = 0;
 	for (int i = 0, k = 0; i < a.nclientes; i++)
 	{
@@ -377,7 +383,8 @@ void *campeonato(void *dados)
 			strcpy(a.jogosAdecorrer[k].nomejogo, a.clientes[i].nome_jogo);
 			strcpy(a.jogosAdecorrer[k].nomecliente, a.clientes[i].nome);
 			//Quando a 2 thread começa a 1 pára
-			if(pthread_create(&a.jogosAdecorrer[k].thread, NULL, jogo, (void *)&a.clientes[i]) != 0){
+			if (pthread_create(&a.jogosAdecorrer[k].thread, NULL, jogo, (void *)&a.clientes[i]) != 0)
+			{
 				printf("Erro na criacao da Thread\n");
 				exit(0);
 			}
@@ -403,23 +410,32 @@ void *campeonato(void *dados)
 		close(fd_cl);
 		a.clientes[i].sair = 1;
 	}
-	/*
-	for (int i = 0; i < a.n_jogosAdecorrer; i++)
-	{
-		pthread_join(a.jogosAdecorrer[i].thread, NULL);
-	}
-	*/
-
+	
+	printf("Terminou campeonato.\n");
 	for (int i = 0; i < a.nclientes; i++)
 	{
 		kill(a.clientes[i].pid, SIGUSR1);
 	}
-
-	printf("Terminou campeonato.\n");
 	sleep(2);
-	mostraPontuacao();
+	int vencedor = mostraPontuacao();
 
-	//free(thread_jogo);
+	//Avisar clientes da pontuaço e vencedor
+	for (int i = 0; i < a.nclientes; i++)
+	{
+		//kill(a.clientes[i].pid, SIGUSR1);
+		char resp[700];
+		int fd_cl = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
+		sprintf(resp,"A sua pontuacao e %d e o jogador vencedor foi %s", a.clientes[i].pontuacao, a.clientes[vencedor].nome);
+		write(fd_cl, resp, strlen(resp));
+		close(fd_cl);
+		
+	}
+
+/*	for (int i = 0; i < a.nclientes; i++)
+	{
+		kill(a.clientes[i].pid, SIGUSR1);
+	}*/
+
 	pthread_exit(NULL);
 }
 
