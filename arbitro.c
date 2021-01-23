@@ -1,12 +1,7 @@
 #include "structs.h"
 #define GAMEDIR "Jogo" //caso nao exista v.ambiente fica com este valor
 #define MAXPLAYER 30   //caso nao exista v.ambiente fica com este valor
-int duracao;
-int espera;
 Arbitro a;
-
-int FLAG_TERMINA = 0; //Flag termina o servidor(arbitro)
-int TERMINA_CAMPEONATO = 1;
 
 void interrupcao()
 {
@@ -35,13 +30,14 @@ int contaPessoasNoCampeonato()
 	int conta = 0;
 	for (int i = 0; i < a.nclientes; i++)
 	{
-		if (a.clientes[i].sair == 0)
+		if (a.clientes[i].sair == 0 && strcmp(a.clientes[i].nome_jogo, "") != 0)
 		{
 			conta++;
 		}
 	}
 	return conta;
 }
+
 void guardaJogos()
 {
 	FILE *f;
@@ -84,7 +80,6 @@ void eliminaCliente(char *nome)
 
 void *trata_logins()
 {
-	char fifo_name[50];
 	Cliente aux; //cliente auxiliar para verificar se o nome do cliente ja existe
 	int fd_serv;
 	int fd_client;
@@ -97,7 +92,7 @@ void *trata_logins()
 
 		//Verificar se o cliente quer introduzir #mygame
 		if (strcmp(aux.comando, "#mygame") == 0)
-		{ //Significa que o cliente ja esta logado e quer introduzir #mygame
+		{
 			char resp[700];
 			for (int i = 0; i < a.nclientes; i++)
 			{
@@ -124,42 +119,41 @@ void *trata_logins()
 				if (strcmp(aux.nome, a.clientes[i].nome) == 0)
 					a.clientes[i].sair = 1;
 			}
-			if (TERMINA_CAMPEONATO != 0) //Se nao tiver acontecer nenhum campeonato
+			//Se nao tiver acontecer nenhum campeonato
+			if (a.FLAG_CAMPEONATO == 0)
 			{
 				char resp[700];
 				eliminaCliente(aux.nome);
-				int fd_cl = open(aux.nome_pipe_escrita, O_RDWR);
+				fd_client = open(aux.nome_pipe_escrita, O_RDWR);
 				strcpy(resp, "Nao esta a decorrer nenhum jogo. Adeus!");
-				write(fd_cl, resp, strlen(resp));
-				close(fd_cl);
+				write(fd_client, resp, strlen(resp));
+				close(fd_client);
 			}
 		}
 		//Trata do login do cliente
 		else if (aux.sair == 0)
 		{
-			if (verificaNome(aux.nome) == 0) //Verificacao do nome
+			//Verificacao do nome
+			if (verificaNome(aux.nome) == 0)
 			{
 				a.clientes[a.nclientes] = aux;
+				printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes].nome);
 
-				if (a.clientes[a.nclientes].atendido != 1)
+				fd_client = open(a.clientes[a.nclientes].nome_pipe_escrita, O_WRONLY);
+				bytes = write(fd_client, "Bem-vindo Cliente!", sizeof("Bem-vindo Cliente!"));
+				if (bytes == 0)
 				{
-					a.clientes[a.nclientes].atendido = 1;
-
-					fd_client = open(a.clientes[a.nclientes].nome_pipe_escrita, O_WRONLY);
-					printf("O jogador %s entrou no jogo.\n", a.clientes[a.nclientes].nome);
-					a.nclientes++; //vou adicionar um cliente ao vetor dos clientes
-					bytes = write(fd_client, "Bem-vindo Cliente!", sizeof("Bem-vindo Cliente!"));
-					if (bytes == 0)
-					{
-						printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
-					}
-					close(fd_client);
+					printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
 				}
+				close(fd_client);
+
+				//Vou adicionar um cliente ao vetor dos clientes
+				a.nclientes++;
 			}
-			else // O nome é repetido
+			// O nome é repetido
+			else
 			{
-				sprintf(fifo_name, SERV_PIPE_WR, aux.pid);
-				fd_client = open(fifo_name, O_WRONLY);
+				fd_client = open(aux.nome_pipe_escrita, O_WRONLY);
 				bytes = write(fd_client, "Ja existe um cliente com esse nome!", sizeof("Ja existe um cliente com esse nome!"));
 				if (bytes == 0)
 				{
@@ -169,7 +163,7 @@ void *trata_logins()
 			}
 		}
 		close(fd_serv);
-	} while (FLAG_TERMINA == 0);
+	} while (a.FLAG_TERMINA == 0);
 }
 
 void comandosMenu()
@@ -185,15 +179,16 @@ void comandosMenu()
 	printf("=================================\n");
 }
 
-int mostraPontuacao() //Retorna o indice do cliente vencedor
+//Retorna o indice do cliente vencedor
+int mostraPontuacao()
 {
-	int n_vencedores = 0, nao_vencedores = 0, retorna = -1;
+	int n_vencedores = 0, desistentes = 0, retorna = -1;
 	for (int i = 0; i < a.nclientes; i++)
 	{
 		if (a.clientes[i].vencedor == 1)
 			n_vencedores++;
 		else
-			nao_vencedores++; //desistentes
+			desistentes++;
 		a.clientes[i].atendido = 0;
 	}
 	int indice = -1, max = -1;
@@ -211,7 +206,7 @@ int mostraPontuacao() //Retorna o indice do cliente vencedor
 		printf(">Vencedores< %d ) Pontuacao do %s - %d pontos\n", i + 1, a.clientes[indice].nome, a.clientes[indice].pontuacao);
 		a.clientes[indice].atendido = 1; //para nao voltar a mostrar o mesmo cliente
 	}
-	for (int i = 0; i < nao_vencedores; i++)
+	for (int i = 0; i < desistentes; i++)
 	{
 		max = -1;
 		for (int j = 0; j < a.nclientes; j++)
@@ -232,6 +227,7 @@ void *jogo(void *dados)
 {
 	Cliente *cli;
 	cli = (Cliente *)dados;
+	//pipe1 -> write || pipe2 -> read
 	int pipe1[2];
 	int pipe2[2];
 	if (pipe(pipe1) == -1) //verifica se conseguiu criar o pipe1
@@ -247,10 +243,8 @@ void *jogo(void *dados)
 	int res;
 	int bytes;
 	char resp[700];
-	char input[20];
 	int status;
 	int pont_exit;
-	char fifo_name[50];
 	int fd_pipe_leitura, fd_pipe_escrita;
 
 	res = fork();
@@ -262,7 +256,6 @@ void *jogo(void *dados)
 	else if (res == 0)
 	{
 		// Processo filho
-		//Falta gerar um nr aleatorio para escolher um jogo da diretoria
 		//pipe1 -> write || pipe2 -> read
 		close(pipe1[1]);   //fechar parte escrita pipe1
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
@@ -282,16 +275,17 @@ void *jogo(void *dados)
 		//Processo Pai
 		close(pipe1[0]); //pipe1 serve para comunicar escrita do arbitro -> jogo
 		close(pipe2[1]); //pipe2 server para comunicar leitura do arbitro <- jogo
-		sprintf(fifo_name, SERV_PIPE_WR, cli->pid);
-		fd_pipe_escrita = open(fifo_name, O_WRONLY);
+		fd_pipe_escrita = open(cli->nome_pipe_escrita, O_WRONLY);
 		fprintf(stdout, "O jogador %s vai jogar\n", cli->nome);
 
 		do
 		{
 			memset(resp, 0, sizeof(resp));
-			if (TERMINA_CAMPEONATO == 1)
+			//Se nao estiver a decorrer campeonato, sai
+			if (a.FLAG_CAMPEONATO != 1)
 			{
-				pthread_exit(NULL);
+				break;
+				//pthread_exit(NULL);
 			}
 			//Ler a informacao inicial do jogo
 			bytes = read(pipe2[0], resp, sizeof(resp));
@@ -304,15 +298,16 @@ void *jogo(void *dados)
 			while (cli->suspenso == 1)
 				sleep(1);
 			write(fd_pipe_escrita, resp, strlen(resp));
-			fd_pipe_leitura = open(cli->nome_pipe_leitura, O_RDONLY);
+
 			//vou ler a informacao enviada pelo cliente
+			fd_pipe_leitura = open(cli->nome_pipe_leitura, O_RDONLY);
 			while (cli->suspenso == 1)
 				sleep(1);
 
 			read(fd_pipe_leitura, &resp, sizeof(resp));
 			close(fd_pipe_leitura);
 			strcat(resp, "\n");
-			//fprintf(stdout, "NUMERO:%s", resp);
+
 			//enviar a informacao lida para o jogo
 			bytes = write(pipe1[1], &resp, strlen(resp));
 			if (bytes == -1)
@@ -320,7 +315,6 @@ void *jogo(void *dados)
 				fprintf(stderr, "O pipe nao conseguiu escrever informacao.\n");
 				exit(0);
 			}
-
 		} while (cli->sair == 0);
 		//Envia SIGUSR1 ao jogo
 		kill(res, SIGUSR1);
@@ -330,11 +324,11 @@ void *jogo(void *dados)
 		perror("waitpid falhou!");
 		exit(0);
 	}
+	//Recebe pontuacao atraves do exit_status
 	if (WIFEXITED(status))
 	{
 		pont_exit = WEXITSTATUS(status);
 		cli->pontuacao = pont_exit;
-
 		close(fd_pipe_escrita);
 	}
 }
@@ -344,18 +338,20 @@ void *campeonato(void *dados)
 {
 	do
 	{
-		int dur = duracao, esp = espera;
+		int dur = a.duracao;
 		do
 		{
-			while (a.nclientes < 2 && FLAG_TERMINA == 0)
+			int esp = a.espera;
+			while (a.nclientes < 2 && a.FLAG_TERMINA == 0)
 				sleep(1);
 			do
 			{
 				sleep(1);
 				esp--;
-			} while (esp > 0 && FLAG_TERMINA == 0);
-		} while (a.nclientes < 2 && FLAG_TERMINA == 0);
-		if(FLAG_TERMINA == 1)
+			} while (esp > 0 && a.FLAG_TERMINA == 0);
+		} while (a.nclientes < 2 && a.FLAG_TERMINA == 0);
+
+		if (a.FLAG_TERMINA == 1)
 			break;
 
 		a.n_jogosAdecorrer = 0;
@@ -373,12 +369,13 @@ void *campeonato(void *dados)
 				printf("O jogador %s vai jogar o jogo %s\n", a.clientes[r].nome, a.jogos[j].identificacao);
 			}
 		} while (a.n_jogosAdecorrer < a.maxplayers && a.n_jogosAdecorrer < a.nclientes);
-		if(FLAG_TERMINA == 1)
+
+		if (a.FLAG_TERMINA == 1)
 			break;
 
 		printf("Comecou campeonato\n");
-		TERMINA_CAMPEONATO = 0;
-		int k = 0;
+		a.FLAG_CAMPEONATO = 1;
+		int k;
 		for (int i = 0, k = 0; i < a.nclientes; i++)
 		{
 			if (strcmp(a.clientes[i].nome_jogo, "") != 0)
@@ -399,14 +396,17 @@ void *campeonato(void *dados)
 			sleep(1);
 			dur--;
 			printf("[Duracao %d]\n", dur);
-		} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0 && contaPessoasNoCampeonato() > 1);
-		TERMINA_CAMPEONATO = 1;
+		} while (dur > 0 && a.FLAG_TERMINA == 0 && a.FLAG_CAMPEONATO == 1 && contaPessoasNoCampeonato() > 1);
+
+		a.FLAG_CAMPEONATO = 0;
+		printf("Terminou campeonato.\n");
 
 		for (int i = 0; i < a.nclientes; i++)
 		{
 			if (a.clientes[i].sair == 0)
 				a.clientes[i].vencedor = 1;
 			a.clientes[i].suspenso = 0;
+
 			//Para nao ficar a espera do numero jogado pelo cliente
 			int fd_cl = open(a.clientes[i].nome_pipe_leitura, O_RDWR);
 			write(fd_cl, "\n", strlen("\n"));
@@ -414,12 +414,12 @@ void *campeonato(void *dados)
 			a.clientes[i].sair = 1;
 		}
 
-		printf("Terminou campeonato.\n");
 		for (int i = 0; i < a.nclientes; i++)
 		{
 			kill(a.clientes[i].pid, SIGUSR1);
 		}
 		sleep(2);
+
 		int vencedor = mostraPontuacao();
 
 		//Avisar clientes da pontuaço e vencedor
@@ -433,7 +433,7 @@ void *campeonato(void *dados)
 		}
 		printf("Todos os clientes vao ser eliminados.\n");
 		a.nclientes = 0;
-	} while (FLAG_TERMINA == 0);
+	} while (a.FLAG_TERMINA == 0);
 	pthread_exit(NULL);
 }
 
@@ -448,10 +448,26 @@ char *devolve_nome(char comando[TAM])
 	return comando;
 }
 
+void TrataSinais()
+{
+	if (signal(SIGINT, interrupcao) == SIG_ERR)
+	{
+		printf("\n [ERRO] Nao foi possivel configurar o sinal SIGINT\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (signal(SIGQUIT, interrupcao) == SIG_ERR)
+	{
+		printf("\n [ERRO] Nao foi possivel configurar o sinal SIGQUIT\n");
+		exit(EXIT_FAILURE);
+	}
+}
 int main(int argc, char *argv[])
 {
 	strcpy(a.gamedir, GAMEDIR);
 	a.maxplayers = MAXPLAYER;
+	a.FLAG_TERMINA = 0;
+	a.FLAG_CAMPEONATO = 0;
 	a.nclientes = 0;
 	a.n_jogos = 0;
 	char comando[TAM];
@@ -478,24 +494,12 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 	//leitura da linha de comandos
-	duracao = atoi(argv[1]);
-	espera = atoi(argv[2]);
-
-	printf("duracao = %d;espera = %d\n", duracao, espera);
-
-	if (signal(SIGINT, interrupcao) == SIG_ERR)
-	{
-		printf("\n [ERRO] Nao foi possivel configurar o sinal SIGINT\n");
-		exit(EXIT_FAILURE);
-	}
-
-	if (signal(SIGQUIT, interrupcao) == SIG_ERR)
-	{
-		printf("\n [ERRO] Nao foi possivel configurar o sinal SIGQUIT\n");
-		exit(EXIT_FAILURE);
-	}
+	a.duracao = atoi(argv[1]);
+	a.espera = atoi(argv[2]);
 
 	setbuf(stdout, NULL);
+
+	TrataSinais();
 
 	if (mkfifo(SERV_PIPE, 0600) == -1) //verifica se conseguiu criar o named pipe
 	{
@@ -508,18 +512,13 @@ int main(int argc, char *argv[])
 	if (getenv("MAXPLAYER") != NULL)
 		a.maxplayers = atoi(getenv("MAXPLAYER"));
 
-	printf("gamedir = %s;maxplayers = %d\n", a.gamedir, a.maxplayers);
-
 	guardaJogos();
-	pthread_t logins;
 
+	pthread_t logins;
 	pthread_create(&logins, NULL, (void *)trata_logins, NULL);
 
 	pthread_t thread_campeonato; //Thread que gera o campeonato
-
 	pthread_create(&thread_campeonato, NULL, (void *)campeonato, NULL);
-
-	//write()pontuacao
 
 	comandosMenu();
 	do
@@ -606,13 +605,13 @@ int main(int argc, char *argv[])
 		}
 		else if (strcasecmp(comando, "end") == 0)
 		{
-			TERMINA_CAMPEONATO = 1;
+			a.FLAG_CAMPEONATO = 0;
 		}
 		else if (strcasecmp(comando, "exit") == 0)
 		{
-			FLAG_TERMINA = 1;
+			a.FLAG_TERMINA = 1;
 		}
-	} while (FLAG_TERMINA == 0);
+	} while (a.FLAG_TERMINA == 0);
 	interrupcao();
 	return 0;
 }
