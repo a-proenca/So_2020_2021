@@ -117,7 +117,7 @@ void *trata_logins()
 			}
 		}
 		//Trata do comando quit e dos logouts
-		else if (strcmp(aux.comando, "#quit") == 0 || aux.sair==1)
+		else if (strcmp(aux.comando, "#quit") == 0 || aux.sair == 1)
 		{
 			for (int i = 0; i < a.nclientes; i++)
 			{
@@ -134,7 +134,7 @@ void *trata_logins()
 				close(fd_cl);
 			}
 		}
-		//Trata do login do cliente 
+		//Trata do login do cliente
 		else if (aux.sair == 0)
 		{
 			if (verificaNome(aux.nome) == 0) //Verificacao do nome
@@ -342,92 +342,98 @@ void *jogo(void *dados)
 //Funcao responsavel pela duracao do campeonato
 void *campeonato(void *dados)
 {
-	int dur = duracao, esp = espera;
 	do
 	{
-		while (a.nclientes < 2 && FLAG_TERMINA == 0)
-			sleep(1);
+		int dur = duracao, esp = espera;
+		do
+		{
+			while (a.nclientes < 2 && FLAG_TERMINA == 0)
+				sleep(1);
+			do
+			{
+				sleep(1);
+				esp--;
+			} while (esp > 0 && FLAG_TERMINA == 0);
+		} while (a.nclientes < 2 && FLAG_TERMINA == 0);
+		if(FLAG_TERMINA == 1)
+			break;
+
+		a.n_jogosAdecorrer = 0;
+		int r = 0;
+		int j = 0;
+		//Atribuir jogos a clientes
+		do
+		{
+			r = rand() % a.nclientes;
+			if (strcmp(a.clientes[r].nome_jogo, "") == 0)
+			{
+				a.n_jogosAdecorrer++;
+				j = rand() % a.n_jogos;
+				strcpy(a.clientes[r].nome_jogo, a.jogos[j].identificacao);
+				printf("O jogador %s vai jogar o jogo %s\n", a.clientes[r].nome, a.jogos[j].identificacao);
+			}
+		} while (a.n_jogosAdecorrer < a.maxplayers && a.n_jogosAdecorrer < a.nclientes);
+		if(FLAG_TERMINA == 1)
+			break;
+
+		printf("Comecou campeonato\n");
+		TERMINA_CAMPEONATO = 0;
+		int k = 0;
+		for (int i = 0, k = 0; i < a.nclientes; i++)
+		{
+			if (strcmp(a.clientes[i].nome_jogo, "") != 0)
+			{ //Se tiver um jogo associado
+				strcpy(a.jogosAdecorrer[k].nomejogo, a.clientes[i].nome_jogo);
+				strcpy(a.jogosAdecorrer[k].nomecliente, a.clientes[i].nome);
+				//Quando a 2 thread começa a 1 pára
+				if (pthread_create(&a.jogosAdecorrer[k].thread, NULL, jogo, (void *)&a.clientes[i]) != 0)
+				{
+					printf("Erro na criacao da Thread\n");
+					exit(0);
+				}
+				k++;
+			}
+		}
 		do
 		{
 			sleep(1);
-			esp--;
-		} while (esp > 0 && FLAG_TERMINA == 0);
-	} while (a.nclientes < 2 && FLAG_TERMINA == 0);
+			dur--;
+			printf("[Duracao %d]\n", dur);
+		} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0 && contaPessoasNoCampeonato() > 1);
+		TERMINA_CAMPEONATO = 1;
 
-	a.n_jogosAdecorrer = 0;
-	int r = 0;
-	int j = 0;
-	//Atribuir jogos a clientes
-	do
-	{
-		r = rand() % a.nclientes;
-		if (strcmp(a.clientes[r].nome_jogo, "") == 0)
+		for (int i = 0; i < a.nclientes; i++)
 		{
-			a.n_jogosAdecorrer++;
-			j = rand() % a.n_jogos;
-			strcpy(a.clientes[r].nome_jogo, a.jogos[j].identificacao);
-			printf("O jogador %s vai jogar o jogo %s\n", a.clientes[r].nome, a.jogos[j].identificacao);
+			if (a.clientes[i].sair == 0)
+				a.clientes[i].vencedor = 1;
+			a.clientes[i].suspenso = 0;
+			//Para nao ficar a espera do numero jogado pelo cliente
+			int fd_cl = open(a.clientes[i].nome_pipe_leitura, O_RDWR);
+			write(fd_cl, "\n", strlen("\n"));
+			close(fd_cl);
+			a.clientes[i].sair = 1;
 		}
-	} while (a.n_jogosAdecorrer < a.maxplayers && a.n_jogosAdecorrer < a.nclientes);
 
-	printf("Comecou campeonato\n");
-	TERMINA_CAMPEONATO = 0;
-	int k = 0;
-	for (int i = 0, k = 0; i < a.nclientes; i++)
-	{
-		if (strcmp(a.clientes[i].nome_jogo, "") != 0)
-		{ //Se tiver um jogo associado
-			strcpy(a.jogosAdecorrer[k].nomejogo, a.clientes[i].nome_jogo);
-			strcpy(a.jogosAdecorrer[k].nomecliente, a.clientes[i].nome);
-			//Quando a 2 thread começa a 1 pára
-			if (pthread_create(&a.jogosAdecorrer[k].thread, NULL, jogo, (void *)&a.clientes[i]) != 0)
-			{
-				printf("Erro na criacao da Thread\n");
-				exit(0);
-			}
-			k++;
+		printf("Terminou campeonato.\n");
+		for (int i = 0; i < a.nclientes; i++)
+		{
+			kill(a.clientes[i].pid, SIGUSR1);
 		}
-	}
-	do
-	{
-		sleep(1);
-		dur--;
-		printf("\nDur %d\n", dur);
-	} while (dur > 0 && FLAG_TERMINA == 0 && TERMINA_CAMPEONATO == 0 && contaPessoasNoCampeonato() > 1);
-	TERMINA_CAMPEONATO = 1;
+		sleep(2);
+		int vencedor = mostraPontuacao();
 
-	for (int i = 0; i < a.nclientes; i++)
-	{
-		if (a.clientes[i].sair == 0)
-			a.clientes[i].vencedor = 1;
-		a.clientes[i].suspenso = 0;
-		//Para nao ficar a espera do numero jogado pelo cliente
-		int fd_cl = open(a.clientes[i].nome_pipe_leitura, O_RDWR);
-		write(fd_cl, "\n", strlen("\n"));
-		close(fd_cl);
-		a.clientes[i].sair = 1;
-	}
-
-	printf("Terminou campeonato.\n");
-	for (int i = 0; i < a.nclientes; i++)
-	{
-		kill(a.clientes[i].pid, SIGUSR1);
-	}
-	sleep(2);
-	int vencedor = mostraPontuacao();
-
-	//Avisar clientes da pontuaço e vencedor
-	for (int i = 0; i < a.nclientes; i++)
-	{
-		char resp[700];
-		int fd_cl = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
-		sprintf(resp, "A sua pontuacao e %d e o jogador vencedor foi %s", a.clientes[i].pontuacao, a.clientes[vencedor].nome);
-		write(fd_cl, resp, strlen(resp));
-		close(fd_cl);
-	}
-	printf("Todos os clientes vao ser eliminados.\n");
-	a.nclientes = 0;
-
+		//Avisar clientes da pontuaço e vencedor
+		for (int i = 0; i < a.nclientes; i++)
+		{
+			char resp[700];
+			int fd_cl = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
+			sprintf(resp, "A sua pontuacao e %d e o jogador vencedor foi %s", a.clientes[i].pontuacao, a.clientes[vencedor].nome);
+			write(fd_cl, resp, strlen(resp));
+			close(fd_cl);
+		}
+		printf("Todos os clientes vao ser eliminados.\n");
+		a.nclientes = 0;
+	} while (FLAG_TERMINA == 0);
 	pthread_exit(NULL);
 }
 
