@@ -95,9 +95,9 @@ void *trata_logins()
 		fd_serv = open(SERV_PIPE, O_RDONLY);  //abertura do pipe (read only)
 		read(fd_serv, &aux, sizeof(Cliente)); //Leio o cliente
 
-		//Verificar se o cliente quer introduzir algum comando
+		//Verificar se o cliente quer introduzir #mygame
 		if (strcmp(aux.comando, "#mygame") == 0)
-		{ //Significa que o cliente ja esta logado e quer introduzir um comando
+		{ //Significa que o cliente ja esta logado e quer introduzir #mygame
 			char resp[700];
 			for (int i = 0; i < a.nclientes; i++)
 			{
@@ -116,8 +116,25 @@ void *trata_logins()
 				}
 			}
 		}
-		//Fim da verificacao
-
+		//Trata do comando quit e dos logouts
+		else if (strcmp(aux.comando, "#quit") == 0 || aux.sair==1)
+		{
+			for (int i = 0; i < a.nclientes; i++)
+			{
+				if (strcmp(aux.nome, a.clientes[i].nome) == 0)
+					a.clientes[i].sair = 1;
+			}
+			if (TERMINA_CAMPEONATO != 0) //Se nao tiver acontecer nenhum campeonato
+			{
+				char resp[700];
+				eliminaCliente(aux.nome);
+				int fd_cl = open(aux.nome_pipe_escrita, O_RDWR);
+				strcpy(resp, "Nao esta a decorrer nenhum jogo. Adeus!");
+				write(fd_cl, resp, strlen(resp));
+				close(fd_cl);
+			}
+		}
+		//Trata do login do cliente 
 		else if (aux.sair == 0)
 		{
 			if (verificaNome(aux.nome) == 0) //Verificacao do nome
@@ -149,23 +166,6 @@ void *trata_logins()
 					printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
 				}
 				close(fd_client);
-			}
-		}
-		else // Trata logouts
-		{
-			for (int i = 0; i < a.nclientes; i++)
-			{
-				if (strcmp(aux.nome, a.clientes[i].nome) == 0)
-					a.clientes[i].sair = 1;
-			}
-			if (TERMINA_CAMPEONATO != 0) //Se nao tiver acontecer nenhum campeonato
-			{
-				char resp[700];
-				eliminaCliente(aux.nome);
-				int fd_cl = open(aux.nome_pipe_escrita, O_RDWR);
-				strcpy(resp, "Nao esta a decorrer nenhum jogo. Adeus!");
-				write(fd_cl, resp, strlen(resp));
-				close(fd_cl);
 			}
 		}
 		close(fd_serv);
@@ -335,7 +335,7 @@ void *jogo(void *dados)
 		pont_exit = WEXITSTATUS(status);
 		cli->pontuacao = pont_exit;
 
-	//	close(fd_pipe_leitura);
+		//	close(fd_pipe_leitura);
 		//	snprintf(resp, sizeof(resp), "A pontuacao e %d", pont_exit);
 		//	write(fd_pipe_escrita, resp, strlen(resp));
 		close(fd_pipe_escrita);
@@ -410,7 +410,7 @@ void *campeonato(void *dados)
 		close(fd_cl);
 		a.clientes[i].sair = 1;
 	}
-	
+
 	printf("Terminou campeonato.\n");
 	for (int i = 0; i < a.nclientes; i++)
 	{
@@ -425,13 +425,12 @@ void *campeonato(void *dados)
 		//kill(a.clientes[i].pid, SIGUSR1);
 		char resp[700];
 		int fd_cl = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
-		sprintf(resp,"A sua pontuacao e %d e o jogador vencedor foi %s", a.clientes[i].pontuacao, a.clientes[vencedor].nome);
+		sprintf(resp, "A sua pontuacao e %d e o jogador vencedor foi %s", a.clientes[i].pontuacao, a.clientes[vencedor].nome);
 		write(fd_cl, resp, strlen(resp));
 		close(fd_cl);
-		
 	}
 
-/*	for (int i = 0; i < a.nclientes; i++)
+	/*	for (int i = 0; i < a.nclientes; i++)
 	{
 		kill(a.clientes[i].pid, SIGUSR1);
 	}*/

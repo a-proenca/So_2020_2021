@@ -2,8 +2,6 @@
 #include "structs.h"
 #include <sys/wait.h>
 Cliente c;
-int servpid;
-int fd_serv;
 int fd_cli;
 char fifo_name[50];
 char fifo_name_serv[50];
@@ -20,11 +18,13 @@ void interrupcao_c()
   int bytes;
   c.sair = 1;
   printf("\nO programa foi interrompido!\n");
+  int fd_serv = open(SERV_PIPE, O_WRONLY);
   bytes = write(fd_serv, &c, sizeof(Cliente));
   if (bytes == 0)
   {
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
+  close(fd_serv);
   unlink(fifo_name);
   unlink(fifo_name_serv);
   exit(EXIT_FAILURE);
@@ -42,7 +42,7 @@ int identificacao()
   char mensagem_serv[50];
   int bytes;
 
-  fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
+ int fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
   c.pontuacao = 0;
   c.atendido = 0;
   c.suspenso = 0;
@@ -57,7 +57,7 @@ int identificacao()
   {
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
-
+  close(fd_serv);
   fd_cli = open(fifo_name_serv, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
   bytes = read(fd_cli, &mensagem_serv, sizeof(mensagem_serv));
   if (bytes == 0)
@@ -85,7 +85,7 @@ int main(int argc, char argv[])
 {
   int bytes;
   char instrucao[TAM];
-  int fd_servidor;
+  int fd_serv;
 
   setbuf(stdout, NULL);
   if (signal(SIGINT, interrupcao_c) == SIG_ERR)
@@ -173,36 +173,29 @@ int main(int argc, char argv[])
       if (isdigit(instrucao[0]))
       { //Vai responder ao jogo
         //enviar a info ao arbitro
-        fd_servidor = open(c.nome_pipe_leitura, O_WRONLY);
-        bytes = write(fd_servidor, instrucao, sizeof(instrucao));
+        fd_serv = open(c.nome_pipe_leitura, O_WRONLY);
+        bytes = write(fd_serv, instrucao, sizeof(instrucao));
         if (bytes == -1)
         {
           fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
         }
-        close(fd_servidor);
+        close(fd_serv);
       }
 
-      if (strcasecmp(instrucao, "#mygame") == 0) // Comando #mygame
+      if (strcasecmp(instrucao, "#mygame") == 0 || strcasecmp(instrucao, "#quit") == 0) // Comando #mygame ou #quit
       {
         strcpy(c.comando, instrucao);
-        fd_servidor = open(SERV_PIPE, O_WRONLY);
-        bytes = write(fd_servidor, &c, sizeof(c));
+        fd_serv = open(SERV_PIPE, O_WRONLY);
+        bytes = write(fd_serv, &c, sizeof(c));
         if (bytes == -1)
         {
           fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
         }
-        close(fd_servidor);
-      }
-      else if (strcasecmp(instrucao, "#quit") == 0)
-      {
-        c.sair = 1;
-        bytes = write(fd_serv, &c, sizeof(Cliente));
-        if (bytes == 0)
+        close(fd_serv);
+        if (strcasecmp(instrucao, "#quit") == 0)
         {
-          printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
+          QUERO_SAIR = 1; // so sai no fim do campeonato dps de receber a pontuacao
         }
-        c.sair = 0;
-        QUERO_SAIR = 1; // so sai no fim do campeonato dps de receber a pontuacao
       }
     }
     else if (res > 0 && FD_ISSET(fd_cli, &fontes))
@@ -220,8 +213,6 @@ int main(int argc, char argv[])
         c.sair = 1;
     }
   }
-
-  close(fd_serv);
   close(fd_cli);
   unlink(fifo_name_serv);
   unlink(fifo_name);
