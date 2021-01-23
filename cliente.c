@@ -4,59 +4,9 @@
 Cliente c;
 char fifo_name[50];
 char fifo_name_serv[50];
-void acabou_campeonato()
-{
-  char resp[700];
-  char letra;
-  printf("Acabou campeonato.\n");
-  int fd_cli = open(fifo_name_serv, O_RDONLY);
-  int bytes = read(fd_cli, &resp, sizeof(resp)); //Ler a pontuacao e o jogador vencedor
-  if (bytes == -1)
-  {
-    fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
-  }
 
-  printf(" %s\n", resp); //Mostro a pontucao e o vencedor
-  close(fd_cli);
-  do
-  {
-    printf("Quer voltar a jogar? (s/n)\n");
-    scanf(" %c", &letra);
-  } while (letra != 's' && letra != 'n');
 
-  if(letra == 'n'){
-    c.sair = 1;
-  }
-  else{
-    printf("Continua\n");
-  }
-
-}
-//fazer unlink caso o programa seja interrompido ctrl+c;
-void interrupcao_c()
-{
-  int bytes;
-  c.sair = 1;
-  printf("\nO programa foi interrompido!\n");
-  int fd_serv = open(SERV_PIPE, O_WRONLY);
-  bytes = write(fd_serv, &c, sizeof(Cliente));
-  if (bytes == 0)
-  {
-    printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
-  }
-  close(fd_serv);
-  unlink(fifo_name);
-  unlink(fifo_name_serv);
-  exit(EXIT_FAILURE);
-}
-void interrupcao_ar()
-{
-  printf("\nO jogador foi encerrado pelo arbitro!\n");
-  unlink(fifo_name);
-  unlink(fifo_name_serv);
-  exit(EXIT_FAILURE);
-}
-
+//Funcao que trata de identificar o cliente
 int identificacao()
 {
   char mensagem_serv[50];
@@ -66,6 +16,8 @@ int identificacao()
   c.pontuacao = 0;
   c.atendido = 0;
   c.suspenso = 0;
+  c.vencedor = 0;
+  strcpy(c.comando, "");
   c.pid = getpid();
   strcpy(c.nome_jogo, "");
   c.sair = 0;
@@ -98,6 +50,66 @@ int identificacao()
   close(fd_cli);
   return 1;
 }
+
+//Quando acaba o campeonato mostra a pontuacao e pergunta se quer continuar a jogar
+void acabou_campeonato()
+{
+  char resp[700];
+  char letra;
+  printf("Acabou campeonato.\n");
+  int fd_cli = open(fifo_name_serv, O_RDONLY);
+  int bytes = read(fd_cli, &resp, sizeof(resp)); //Ler a pontuacao e o jogador vencedor
+  if (bytes == -1)
+  {
+    fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
+  }
+
+  printf(" %s\n", resp); //Mostro a pontucao e o vencedor
+  close(fd_cli);
+  do
+  {
+    printf("Quer voltar a jogar? (s/n)\n");
+    scanf(" %c", &letra);
+  } while (letra != 's' && letra != 'n');
+
+  if (letra == 'n')
+  {
+    c.sair = 1;
+  }
+  else
+  {
+    printf("Continua\n");
+    if (identificacao() == 0)
+      exit(0);
+  }
+}
+
+//Fazer unlink caso o programa seja interrompido ctrl+c;
+void interrupcao_c()
+{
+  int bytes;
+  c.sair = 1;
+  printf("\nO programa foi interrompido!\n");
+  int fd_serv = open(SERV_PIPE, O_WRONLY);
+  bytes = write(fd_serv, &c, sizeof(Cliente));
+  if (bytes == 0)
+  {
+    printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
+  }
+  close(fd_serv);
+  unlink(fifo_name);
+  unlink(fifo_name_serv);
+  exit(EXIT_FAILURE);
+}
+void interrupcao_ar()
+{
+  printf("\nO jogador foi encerrado pelo arbitro!\n");
+  unlink(fifo_name);
+  unlink(fifo_name_serv);
+  exit(EXIT_FAILURE);
+}
+
+
 //Vou escrever para o arbitro no pipe -> SERV_PIPE_WR
 //Vou ler do servidor pelo CLIENT_PIPE
 
@@ -212,6 +224,7 @@ int main(int argc, char argv[])
           fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
         }
         close(fd_serv);
+        strcpy(c.comando, "");
       }
     }
     else if (res > 0 && FD_ISSET(fd_cli, &fontes))
@@ -225,8 +238,8 @@ int main(int argc, char argv[])
       }
 
       printf(" %s\n", resp);
-      if(strcasecmp(resp,"Nao esta a decorrer nenhum jogo. Adeus!")==0)
-        c.sair=1;
+      if (strcasecmp(resp, "Nao esta a decorrer nenhum jogo. Adeus!") == 0)
+        c.sair = 1;
     }
   }
   close(fd_cli);

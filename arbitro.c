@@ -335,9 +335,6 @@ void *jogo(void *dados)
 		pont_exit = WEXITSTATUS(status);
 		cli->pontuacao = pont_exit;
 
-		//	close(fd_pipe_leitura);
-		//	snprintf(resp, sizeof(resp), "A pontuacao e %d", pont_exit);
-		//	write(fd_pipe_escrita, resp, strlen(resp));
 		close(fd_pipe_escrita);
 	}
 }
@@ -422,18 +419,14 @@ void *campeonato(void *dados)
 	//Avisar clientes da pontuaço e vencedor
 	for (int i = 0; i < a.nclientes; i++)
 	{
-		//kill(a.clientes[i].pid, SIGUSR1);
 		char resp[700];
 		int fd_cl = open(a.clientes[i].nome_pipe_escrita, O_WRONLY);
 		sprintf(resp, "A sua pontuacao e %d e o jogador vencedor foi %s", a.clientes[i].pontuacao, a.clientes[vencedor].nome);
 		write(fd_cl, resp, strlen(resp));
 		close(fd_cl);
 	}
-
-	/*	for (int i = 0; i < a.nclientes; i++)
-	{
-		kill(a.clientes[i].pid, SIGUSR1);
-	}*/
+	printf("Todos os clientes vao ser eliminados.\n");
+	a.nclientes = 0;
 
 	pthread_exit(NULL);
 }
