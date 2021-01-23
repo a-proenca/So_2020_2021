@@ -1,4 +1,4 @@
-all: arbitro cliente jogo
+all: arbitro cliente jogo install
 
 
 arbitro:
@@ -12,7 +12,9 @@ jogo:
 	gcc  G_004.c -o G_004	
 	gcc  G_005.c -o G_005
 
+
 clean: cleana cleanc cleanj
+
 
 cleana:
 	rm arbitro
