@@ -8,6 +8,12 @@ int identificacao()
   char mensagem_serv[50];
   int bytes;
 
+  //verifica se o servidor ainda esta ativo
+  if (access(SERV_PIPE, F_OK) != 0)
+  {
+    printf("[Erro]Nao existe nenhum servidor ativo.\n");
+    exit(EXIT_FAILURE);
+  }
   int fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
   c.pontuacao = 0;
   c.atendido = 0;
