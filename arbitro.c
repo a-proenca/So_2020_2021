@@ -246,6 +246,12 @@ void *jogo(void *dados)
 	int status;
 	int pont_exit;
 	int fd_pipe_leitura, fd_pipe_escrita;
+	char nomeJogo[50];
+	strcpy(nomeJogo,a.gamedir);
+	strcat(nomeJogo, "/");
+	strcat(nomeJogo, cli->nome_jogo);
+	nomeJogo[strlen(nomeJogo) - 1] = '\0';
+	printf("%s\n", nomeJogo);
 
 	res = fork();
 	if (res == -1)
@@ -261,14 +267,7 @@ void *jogo(void *dados)
 		close(pipe2[0]);   //fechar parte de leitura do pipe2
 		dup2(pipe1[0], 0); //redirecionamos a escrita do pipe1
 		dup2(pipe2[1], 1); //redirecionamos a leitra do pipe2
-		if (strcmp(cli->nome_jogo, "G_004\n") == 0)
-		{
-			execl("Jogo/G_004", cli->nome_jogo, NULL);
-		}
-		else
-		{
-			execl("Jogo/G_005", cli->nome_jogo, NULL);
-		}
+		execl(nomeJogo, cli->nome_jogo, NULL);
 	}
 	else
 	{
