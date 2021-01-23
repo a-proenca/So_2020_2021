@@ -2,15 +2,35 @@
 #include "structs.h"
 #include <sys/wait.h>
 Cliente c;
-int fd_cli;
 char fifo_name[50];
 char fifo_name_serv[50];
-int QUERO_SAIR = 0;
-
 void acabou_campeonato()
 {
+  char resp[700];
+  char letra;
   printf("Acabou campeonato.\n");
-  QUERO_SAIR = 1;
+  int fd_cli = open(fifo_name_serv, O_RDONLY);
+  int bytes = read(fd_cli, &resp, sizeof(resp)); //Ler a pontuacao e o jogador vencedor
+  if (bytes == -1)
+  {
+    fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
+  }
+
+  printf(" %s\n", resp); //Mostro a pontucao e o vencedor
+  close(fd_cli);
+  do
+  {
+    printf("Quer voltar a jogar? (s/n)\n");
+    scanf(" %c", &letra);
+  } while (letra != 's' && letra != 'n');
+
+  if(letra == 'n'){
+    c.sair = 1;
+  }
+  else{
+    printf("Continua\n");
+  }
+
 }
 //fazer unlink caso o programa seja interrompido ctrl+c;
 void interrupcao_c()
@@ -42,7 +62,7 @@ int identificacao()
   char mensagem_serv[50];
   int bytes;
 
- int fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
+  int fd_serv = open(SERV_PIPE, O_WRONLY); //enviar login ao arbitro
   c.pontuacao = 0;
   c.atendido = 0;
   c.suspenso = 0;
@@ -58,7 +78,7 @@ int identificacao()
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
   close(fd_serv);
-  fd_cli = open(fifo_name_serv, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
+  int fd_cli = open(fifo_name_serv, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
   bytes = read(fd_cli, &mensagem_serv, sizeof(mensagem_serv));
   if (bytes == 0)
   {
@@ -152,7 +172,7 @@ int main(int argc, char argv[])
   if (identificacao() == 0)
     return 0;
 
-  fd_cli = open(fifo_name_serv, O_RDWR);
+  int fd_cli = open(fifo_name_serv, O_RDWR);
   fd_set fontes;
   while (c.sair != 1)
   {
@@ -192,10 +212,6 @@ int main(int argc, char argv[])
           fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
         }
         close(fd_serv);
-        if (strcasecmp(instrucao, "#quit") == 0)
-        {
-          QUERO_SAIR = 1; // so sai no fim do campeonato dps de receber a pontuacao
-        }
       }
     }
     else if (res > 0 && FD_ISSET(fd_cli, &fontes))
@@ -209,8 +225,8 @@ int main(int argc, char argv[])
       }
 
       printf(" %s\n", resp);
-      if (QUERO_SAIR == 1)
-        c.sair = 1;
+      if(strcasecmp(resp,"Nao esta a decorrer nenhum jogo. Adeus!")==0)
+        c.sair=1;
     }
   }
   close(fd_cli);
