@@ -1,10 +1,6 @@
-#include <stdio.h>
 #include "structs.h"
-#include <sys/wait.h>
-Cliente c;
-char fifo_name[50];
-char fifo_name_serv[50];
 
+Cliente c;
 
 //Funcao que trata de identificar o cliente
 int identificacao()
@@ -24,13 +20,17 @@ int identificacao()
 
   printf("\nIndique o seu nome:");
   scanf("%s", c.nome);
+
+  //Enviar a estrutura cliente ao arbitro
   bytes = write(fd_serv, &c, sizeof(Cliente));
   if (bytes == 0)
   {
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
   close(fd_serv);
-  int fd_cli = open(fifo_name_serv, O_RDONLY); // Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
+
+  //Recebe info do servidor de boas vindas caso a autenticação tenha sido bem sucedida
+  int fd_cli = open(c.nome_pipe_escrita, O_RDONLY);
   bytes = read(fd_cli, &mensagem_serv, sizeof(mensagem_serv));
   if (bytes == 0)
   {
@@ -38,15 +38,14 @@ int identificacao()
   }
   printf("servidor: %s\n", mensagem_serv);
 
-  if (strcasecmp(mensagem_serv, "Bem-vindo Cliente!") != 0)
+  if (strcasecmp(mensagem_serv, "Bem-vindo Cliente!") != 0) //Por exemplo quando ha 1 cliente com o mesmo nome
   {
     c.sair = 1;
     close(fd_cli);
-    unlink(fifo_name_serv);
-    unlink(fifo_name);
+    unlink(c.nome_pipe_escrita);
+    unlink(c.nome_pipe_leitura);
     return 0;
   }
-
   close(fd_cli);
   return 1;
 }
@@ -56,15 +55,17 @@ void acabou_campeonato()
 {
   char resp[700];
   char letra;
+
   printf("Acabou campeonato.\n");
-  int fd_cli = open(fifo_name_serv, O_RDONLY);
-  int bytes = read(fd_cli, &resp, sizeof(resp)); //Ler a pontuacao e o jogador vencedor
+  //Ler a pontuacao e o jogador vencedor
+  int fd_cli = open(c.nome_pipe_escrita, O_RDONLY);
+  int bytes = read(fd_cli, &resp, sizeof(resp));
   if (bytes == -1)
   {
     fprintf(stderr, "O pipe nao conseguiu ler informacao proveniente do arbitro.\n");
   }
-
-  printf(" %s\n", resp); //Mostro a pontucao e o vencedor
+  //Mostro a pontucao e o vencedor
+  printf(" %s\n", resp);
   close(fd_cli);
   do
   {
@@ -78,7 +79,6 @@ void acabou_campeonato()
   }
   else
   {
-    printf("Continua\n");
     if (identificacao() == 0)
       exit(0);
   }
@@ -97,29 +97,20 @@ void interrupcao_c()
     printf("[Erro]Nao conseguiu escrever nada no pipe.\n");
   }
   close(fd_serv);
-  unlink(fifo_name);
-  unlink(fifo_name_serv);
+  unlink(c.nome_pipe_leitura);
+  unlink(c.nome_pipe_escrita);
   exit(EXIT_FAILURE);
 }
 void interrupcao_ar()
 {
   printf("\nO jogador foi encerrado pelo arbitro!\n");
-  unlink(fifo_name);
-  unlink(fifo_name_serv);
+  unlink(c.nome_pipe_leitura);
+  unlink(c.nome_pipe_escrita);
   exit(EXIT_FAILURE);
 }
 
-
-//Vou escrever para o arbitro no pipe -> SERV_PIPE_WR
-//Vou ler do servidor pelo CLIENT_PIPE
-
-int main(int argc, char argv[])
+void TrataSinais()
 {
-  int bytes;
-  char instrucao[TAM];
-  int fd_serv;
-
-  setbuf(stdout, NULL);
   if (signal(SIGINT, interrupcao_c) == SIG_ERR)
   {
     printf("\n [ERRO] Nao foi possivel configurar o sinal SIGINT\n");
@@ -137,54 +128,66 @@ int main(int argc, char argv[])
     printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR2\n");
     exit(EXIT_FAILURE);
   }
-
-  if (access(SERV_PIPE, F_OK) != 0)
-  { //verifica se existe um servidor a correr
-    printf("[Erro]Nao existe nenhum servidor ativo.\n");
-    exit(EXIT_FAILURE);
-  }
-
-  sprintf(fifo_name_serv, SERV_PIPE_WR, getpid());
-  sprintf(fifo_name, CLIENT_PIPE, getpid());
-  //GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE ESCRITA(ARB->CLI)
-  strcpy(c.nome_pipe_escrita, fifo_name_serv);
-  //GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE LEITURA(ARB <- CLI)
-  strcpy(c.nome_pipe_leitura, fifo_name);
-  c.vencedor = 0;
-  strcpy(c.comando, "");
-
-  if (access(fifo_name, F_OK) == 0)
-  { /// verifica se o pipe ja esta aberto
-    printf("\n[ERRO] Cliente ja existe.\n");
-    exit(EXIT_FAILURE);
-  }
-  if (access(fifo_name_serv, F_OK) == 0)
-  { // verifica se o pipe ja esta aberto
-    printf("\n[ERRO] Cliente ja existe.\n");
-    exit(EXIT_FAILURE);
-  }
-
-  if (mkfifo(fifo_name_serv, 0600) == -1)
-  {
-    printf("\n[ERRO] Erro ao criar o pipe do cliente (mkfifo)");
-    exit(EXIT_FAILURE);
-  }
-  if (mkfifo(fifo_name, 0600) == -1)
-  {
-    printf("\n[ERRO] Erro ao criar o pipe do cliente (mkfifo)");
-    exit(EXIT_FAILURE);
-  }
-
   if (signal(SIGUSR1, acabou_campeonato) == SIG_ERR)
   {
     printf("\n [ERRO] Nao foi possivel configurar o sinal SIGUSR1\n");
     exit(EXIT_FAILURE);
   }
+}
+
+void TrataNamedPipes()
+{
+  //GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE ESCRITA(ARB->CLI)
+  sprintf(c.nome_pipe_escrita, SERV_PIPE_WR, getpid());
+  //GUARDAR NA ESTRUTURA CLIENTE O NOME DO PIPE DE LEITURA(ARB <- CLI)
+  sprintf(c.nome_pipe_leitura, CLIENT_PIPE, getpid());
+
+  //verifica se existe um servidor a correr
+  if (access(SERV_PIPE, F_OK) != 0)
+  {
+    printf("[Erro]Nao existe nenhum servidor ativo.\n");
+    exit(EXIT_FAILURE);
+  }
+  // verifica se o pipe ja esta aberto
+  if (access(c.nome_pipe_leitura, F_OK) == 0)
+  {
+    printf("\n[ERRO] Cliente ja existe.\n");
+    exit(EXIT_FAILURE);
+  }
+  if (access(c.nome_pipe_escrita, F_OK) == 0)
+  {
+    printf("\n[ERRO] Cliente ja existe.\n");
+    exit(EXIT_FAILURE);
+  }
+  //Trata da abertura dos pipes
+  if (mkfifo(c.nome_pipe_escrita, 0600) == -1)
+  {
+    printf("\n[ERRO] Erro ao criar o pipe do cliente (mkfifo)");
+    exit(EXIT_FAILURE);
+  }
+  if (mkfifo(c.nome_pipe_leitura, 0600) == -1)
+  {
+    printf("\n[ERRO] Erro ao criar o pipe do cliente (mkfifo)");
+    exit(EXIT_FAILURE);
+  }
+}
+
+int main(int argc, char argv[])
+{
+  int bytes;
+  char instrucao[TAM];
+  int fd_serv, fd;
+
+  setbuf(stdout, NULL);
+
+  TrataNamedPipes();
+  TrataSinais();
 
   if (identificacao() == 0)
     return 0;
 
-  int fd_cli = open(fifo_name_serv, O_RDWR);
+  //Abertura do pipe para podermos receber a info do arbitro
+  int fd_cli = open(c.nome_pipe_escrita, O_RDWR);
   fd_set fontes;
   while (c.sair != 1)
   {
@@ -197,24 +200,26 @@ int main(int argc, char argv[])
     FD_SET(fd_cli, &fontes); //preparar para receber do pipe
     int res = select(fd_cli + 1, &fontes, NULL, NULL, NULL);
 
+    //se tiver a receber algo do teclado
     if (res > 0 && FD_ISSET(0, &fontes))
-    { //se tiver a receber algo do teclado
+    {
       fgets(instrucao, TAM, stdin);
       instrucao[strlen(instrucao) - 1] = '\0';
 
+      //Se for um digito significa que e info para o jogo
       if (isdigit(instrucao[0]))
-      { //Vai responder ao jogo
-        //enviar a info ao arbitro
-        fd_serv = open(c.nome_pipe_leitura, O_WRONLY);
-        bytes = write(fd_serv, instrucao, sizeof(instrucao));
+      {
+        fd = open(c.nome_pipe_leitura, O_WRONLY);
+        bytes = write(fd, instrucao, sizeof(instrucao));
         if (bytes == -1)
         {
           fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
         }
-        close(fd_serv);
+        close(fd);
       }
 
-      if (strcasecmp(instrucao, "#mygame") == 0 || strcasecmp(instrucao, "#quit") == 0) // Comando #mygame ou #quit
+      // Comando #mygame ou #quit
+      if (strcasecmp(instrucao, "#mygame") == 0 || strcasecmp(instrucao, "#quit") == 0)
       {
         strcpy(c.comando, instrucao);
         fd_serv = open(SERV_PIPE, O_WRONLY);
@@ -224,13 +229,16 @@ int main(int argc, char argv[])
           fprintf(stderr, "O pipe nao conseguiu escrever a informacao para o arbitro.\n");
         }
         close(fd_serv);
+        //Apaga o comando
         strcpy(c.comando, "");
       }
     }
+    //se receber algo do pipe
     else if (res > 0 && FD_ISSET(fd_cli, &fontes))
-    { //se receber algo do pipe
+    {
       char resp[700];
       memset(resp, 0, sizeof(resp));
+      //Vou ler a info proveniente do jogo, ou dos comandos
       bytes = read(fd_cli, &resp, sizeof(resp));
       if (bytes == -1)
       {
@@ -243,7 +251,7 @@ int main(int argc, char argv[])
     }
   }
   close(fd_cli);
-  unlink(fifo_name_serv);
-  unlink(fifo_name);
+  unlink(c.nome_pipe_escrita);
+  unlink(c.nome_pipe_leitura);
   return 0;
 }

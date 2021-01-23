@@ -22,7 +22,7 @@
 //estrutura jogo
 typedef struct jogo
 {
-    char identificacao[TAM]; //Tem de ser unico
+    char identificacao[TAM];
 } Jogo;
 
 typedef struct jogosAdecorrer

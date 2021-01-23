@@ -7,15 +7,35 @@
 #define TAM 50
 
 int PONTUACAO = 0;
-
 int flag_termina = 0;
-
-int verifica(int p1, int p2);
 
 void termina_jogo()
 {
     flag_termina = 1;
     exit(PONTUACAO);
+}
+
+int verifica(int p1, int p2)
+{
+    int ganha = 0;
+
+    //Nr aleatorio foi par
+    if (p2 % 2 == 0)
+    {
+        if (p1 == 1)
+        {
+            ganha = 1;
+        }
+    }
+    //Se for impar
+    else
+    { 
+        if (p1 == 2)
+        {
+            ganha = 1;
+        }
+    }
+    return ganha;
 }
 
 int main(int argc, char *argv[])
@@ -42,12 +62,11 @@ int main(int argc, char *argv[])
 
     do
     {
-    //    printf("\nEscolha par ou impar (1,2) ");
         scanf("%s", objeto);
         
         numero = atoi(objeto);
         if(numero == 1 || numero==2){
-             r = rand() % 99 + 1;
+            r = rand() % 99 + 1;
             ganha = verifica(numero, r);
             if (ganha == 1)
             {
@@ -65,31 +84,7 @@ int main(int argc, char *argv[])
        
     } while (flag_termina == 0);
 
-  //  printf("PONT = %d", PONTUACAO);
-
     exit(PONTUACAO);
 
     return 0;
-}
-
-int verifica(int p1, int p2)
-{
-
-    int ganha = 0;
-
-    if (p2 % 2 == 0)
-    { //nr aleatorio foi par
-        if (p1 == 1)
-        {
-            ganha = 1;
-        }
-    }
-    else
-    { //se for impar
-        if (p1 == 2)
-        {
-            ganha = 1;
-        }
-    }
-    return ganha;
 }
