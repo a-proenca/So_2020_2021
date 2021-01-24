@@ -164,6 +164,7 @@ void *trata_logins()
 		}
 		close(fd_serv);
 	} while (a.FLAG_TERMINA == 0);
+	pthread_exit(NULL);
 }
 
 void comandosMenu()
@@ -284,7 +285,6 @@ void *jogo(void *dados)
 			if (a.FLAG_CAMPEONATO != 1)
 			{
 				break;
-				//pthread_exit(NULL);
 			}
 			//Ler a informacao inicial do jogo
 			bytes = read(pipe2[0], resp, sizeof(resp));
@@ -330,6 +330,7 @@ void *jogo(void *dados)
 		cli->pontuacao = pont_exit;
 		close(fd_pipe_escrita);
 	}
+	pthread_exit(NULL);
 }
 
 //Funcao responsavel pela duracao do campeonato
@@ -381,7 +382,7 @@ void *campeonato(void *dados)
 			{ //Se tiver um jogo associado
 				strcpy(a.jogosAdecorrer[k].nomejogo, a.clientes[i].nome_jogo);
 				strcpy(a.jogosAdecorrer[k].nomecliente, a.clientes[i].nome);
-				//Quando a 2 thread começa a 1 pára
+				//Inicializamos a thread para cada cliente
 				if (pthread_create(&a.jogosAdecorrer[k].thread, NULL, jogo, (void *)&a.clientes[i]) != 0)
 				{
 					printf("Erro na criacao da Thread\n");
@@ -410,7 +411,7 @@ void *campeonato(void *dados)
 			int fd_cl = open(a.clientes[i].nome_pipe_leitura, O_RDWR);
 			write(fd_cl, "\n", strlen("\n"));
 			close(fd_cl);
-			a.clientes[i].sair = 1;
+			a.clientes[i].sair = 1; //Terminar a thread
 		}
 
 		for (int i = 0; i < a.nclientes; i++)
